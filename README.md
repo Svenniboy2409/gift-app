@@ -151,10 +151,30 @@ datamodel vanzelf mee.
 
 ### 7. Je adres
 
-Bovenaan het projectdashboard staat je adres, meestal
-`https://gift-app-<iets>.vercel.app`. Dat is het adres van je app; dat deel je
-met familie en vrienden. Onder **Settings → Domains** kun je er een kortere van
-maken, bijvoorbeeld `wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
+Onder **Settings → Domains** staan al je adressen. Je hebt er twee soorten:
+
+- `gift-app-<team>.vercel.app` — je **productie-adres**. Dít is het adres van je
+  app, dat deel je met familie en vrienden.
+- `gift-<willekeurige-code>-<team>.vercel.app` — een **deployment-adres**, dat
+  hoort bij één specifieke build. Handig om een oude versie terug te kijken,
+  maar niet om te delen: die zijn standaard afgeschermd.
+
+Op dezelfde pagina kun je een kortere naam kiezen, bijvoorbeeld
+`wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
+
+### 8. Het slot eraf halen
+
+Vraagt je adres om in te loggen bij Vercel, ook in een browser waar je niet bent
+ingelogd? Dan staat **Deployment Protection** aan. Zolang dat zo is kan niemand
+je lijsten bekijken, want daar heb je nu juist een deelbare link voor nodig.
+
+Ga naar **Settings → Deployment Protection** (of direct naar
+`https://vercel.com/<jouw-team>/gift-app/settings/deployment-protection`) en zet
+**Vercel Authentication** op **Disabled**. Vergeet niet op te slaan.
+
+Dat is veilig: de app regelt zijn eigen accounts met e-mail en wachtwoord, en
+gedeelde lijsten horen bereikbaar te zijn voor mensen zonder Vercel-account.
+Privélijsten blijven privé, en deel-links blijven onraadbaar.
 
 ### Kort samengevat
 
