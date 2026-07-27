@@ -306,12 +306,21 @@ export function GiftManager({
 
   function handleScrapeResult(result: ScrapeResponse) {
     const product = result.product;
+
+    // Werd de shop geblokkeerd, dan hebben we hooguit uit de link kunnen
+    // afleiden hoe het product heet. Zeg dat dan ook, in plaats van de
+    // algemene "niet alles gelukt"-melding.
+    const blocked = result.reason === "blocked";
     const notice =
       result.quality === "failed"
-        ? t(result.reason === "blocked" ? "scrape.blocked" : "scrape.failed")
-        : result.quality === "partial"
-          ? t("scrape.partial")
-          : null;
+        ? t(blocked ? "scrape.blocked" : "scrape.failed")
+        : blocked
+          ? t("scrape.blockedPartial", {
+              shop: product.merchant ?? t("scrape.thisShop"),
+            })
+          : result.quality === "partial"
+            ? t("scrape.partial")
+            : null;
 
     setEditing({
       mode: "new",

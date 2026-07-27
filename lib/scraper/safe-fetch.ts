@@ -5,12 +5,34 @@ import { isIP } from "node:net";
 
 const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MIN_IMAGE_BYTES = 2 * 1024; // kleiner is bijna altijd een placeholder
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 12_000;
 
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+  "(KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
+
+/**
+ * De headers die een echte browser meestuurt bij het openen van een pagina.
+ * Webshops kijken hiernaar om geautomatiseerd verkeer te herkennen; een verzoek
+ * met alleen een User-Agent valt meteen op. Dit is dezelfde set die
+ * linkvoorbeelden in bijvoorbeeld chatapps gebruiken.
+ */
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent": USER_AGENT,
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
+  "Sec-Ch-Ua": '"Chromium";v="139", "Not=A?Brand";v="24", "Google Chrome";v="139"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Upgrade-Insecure-Requests": "1",
+};
 
 export class FetchBlockedError extends Error {}
 
@@ -157,12 +179,7 @@ export type FetchedPage = {
 
 /** Haalt een HTML-pagina op met alle veiligheidsgrenzen. */
 export async function fetchHtml(rawUrl: string): Promise<FetchedPage> {
-  const { response, finalUrl } = await followedFetch(rawUrl, {
-    "User-Agent": USER_AGENT,
-    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "nl-NL,nl;q=0.9,en;q=0.8",
-    "Cache-Control": "no-cache",
-  });
+  const { response, finalUrl } = await followedFetch(rawUrl, BROWSER_HEADERS);
 
   if (!response.ok) {
     return { html: "", finalUrl, status: response.status };
@@ -219,7 +236,9 @@ export async function fetchImage(
   if (!ALLOWED_IMAGE_TYPES.has(contentType)) return null;
 
   const bytes = await readCapped(response, MAX_IMAGE_BYTES);
-  if (bytes.length === 0) return null;
+  // Webshops geven bij een onbekend product vaak een piepklein "geen
+  // afbeelding"-plaatje terug in plaats van een 404. Die willen we niet opslaan.
+  if (bytes.length < MIN_IMAGE_BYTES) return null;
   return { bytes, contentType };
 }
 

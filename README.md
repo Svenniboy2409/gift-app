@@ -210,9 +210,33 @@ volgorde te vinden (per veld wint de eerste treffer):
 De gevonden afbeelding wordt gedownload en als eigen kopie opgeslagen, zodat
 foto's blijven werken als de webshop de originele URL wijzigt.
 
-Webshops mogen dit weigeren. Krijgen we een 403 of vinden we niets, dan opent
-hetzelfde formulier met een duidelijke melding en vul je het zelf in — toevoegen
-mislukt dus nooit helemaal.
+### Als een webshop ons buiten de deur houdt
+
+Grote webshops — bol.com en Amazon voorop — laten geen verzoeken toe die van een
+datacenter komen, en daar draait deze app op. Ze kijken naar het IP-adres, niet
+naar wat je meestuurt. Er is dus geen header of instelling die dat omzeilt.
+
+Daarom valt de app terug op wat er in de **link zelf** staat
+(`lib/scraper/from-url.ts`), en dat is verrassend veel:
+
+- de productnaam staat meestal letterlijk in het pad —
+  `…/p/lego-classic-creatieve-superset-11036/…` wordt "Lego classic creatieve
+  superset 11036"
+- bij Amazon zit de ASIN in de link, en daarmee kunnen we de foto rechtstreeks
+  bij de afbeeldingsserver ophalen. Die staat los van de winkelpagina en heeft
+  geen botcontrole
+- de winkelnaam volgt uit het domein
+
+Je houdt dan alleen de prijs over om zelf in te vullen, en de app zegt dat ook
+met zoveel woorden. Toevoegen mislukt dus nooit helemaal.
+
+Wil je bol.com en Amazon tóch volledig automatisch, dan is een betaalde
+scraping-dienst (ScrapingBee, Scrapfly, Zyte) de enige route die structureel
+werkt: die draaien vanaf woonhuis-IP's. Dat is een bewuste keuze met een
+prijskaartje, dus die zit niet standaard ingebouwd.
+
+Kleinere en middelgrote webshops doen meestal niet aan dit soort blokkades. Daar
+werkt het uitlezen gewoon volledig.
 
 ### Veiligheid van de scraper
 

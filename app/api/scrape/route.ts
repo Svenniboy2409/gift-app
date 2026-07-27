@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { extractProduct } from "@/lib/scraper/extract";
+import { hintsFromUrl } from "@/lib/scraper/from-url";
 import { FetchBlockedError, fetchHtml, fetchImage } from "@/lib/scraper/safe-fetch";
 import { storeImage } from "@/lib/storage";
 
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 
 export type ScrapeResponse = {
   ok: boolean;
-  /** "ok" = alles gevonden, "partial" = titel maar geen prijs, "failed" = niets */
+  /** "ok" = alles gevonden, "partial" = deels, "failed" = niets bruikbaars */
   quality: "ok" | "partial" | "failed";
   reason?: string;
   product: {
@@ -32,6 +33,17 @@ function normalizeUrl(input: string) {
     const url = new URL(withScheme);
     if (!url.hostname.includes(".")) return null;
     return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Downloadt een afbeelding en bewaart er een eigen kopie van. */
+async function storeRemoteImage(imageUrl: string | null, referer: string) {
+  if (!imageUrl) return null;
+  try {
+    const image = await fetchImage(imageUrl, referer);
+    return image ? await storeImage(image.bytes, image.contentType) : null;
   } catch {
     return null;
   }
@@ -67,15 +79,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid-url" }, { status: 400 });
   }
 
-  const empty: ScrapeResponse["product"] = {
-    title: null,
-    description: null,
-    priceCents: null,
-    currency: "EUR",
-    imageUrl: null,
-    merchant: null,
-    url,
-  };
+  // Wat we sowieso uit de link zelf kunnen halen. Dit is ons vangnet: grote
+  // webshops weren verzoeken vanaf datacenters, en dan komen we niet eens bij
+  // de pagina. De productnaam staat meestal gewoon in de link, en bij Amazon
+  // kunnen we uit de ASIN ook de foto opbouwen.
+  const hints = hintsFromUrl(url);
+
+  async function fromHintsOnly(reason: string): Promise<Response> {
+    const storedImage = await storeRemoteImage(hints.imageUrl, url!);
+    return NextResponse.json<ScrapeResponse>({
+      ok: Boolean(hints.title),
+      quality: hints.title ? "partial" : "failed",
+      reason,
+      product: {
+        title: hints.title,
+        description: null,
+        priceCents: null,
+        currency: "EUR",
+        imageUrl: storedImage,
+        merchant: hints.merchant,
+        url: url!,
+      },
+    });
+  }
 
   let html = "";
   let finalUrl = url;
@@ -84,59 +110,48 @@ export async function POST(request: Request) {
     html = page.html;
     finalUrl = page.finalUrl;
     if (!html) {
-      // 403/503 betekent bijna altijd een bot-blokkade van de webshop.
-      return NextResponse.json<ScrapeResponse>({
-        ok: false,
-        quality: "failed",
-        reason: page.status === 403 || page.status === 429 ? "blocked" : "fetch-failed",
-        product: empty,
-      });
+      // 403/429 betekent bijna altijd een bot-blokkade van de webshop.
+      return await fromHintsOnly(
+        page.status === 403 || page.status === 429 ? "blocked" : "fetch-failed",
+      );
     }
   } catch (error) {
     const reason =
       error instanceof FetchBlockedError ? error.message : "fetch-failed";
-    const status = reason === "private-address" || reason === "invalid-protocol" ? 400 : 200;
-    if (status === 400) {
+    if (reason === "private-address" || reason === "invalid-protocol") {
       return NextResponse.json({ error: reason }, { status: 400 });
     }
-    return NextResponse.json<ScrapeResponse>({
-      ok: false,
-      quality: "failed",
-      reason,
-      product: empty,
-    });
+    return await fromHintsOnly(reason);
   }
 
   const product = extractProduct(html, finalUrl);
 
+  // De pagina kwam binnen, maar sommige shops serveren dan alsnog een
+  // controlepagina zonder productgegevens. Dan vult de link het gat.
+  const title = product.title ?? hints.title;
+
   // Eigen kopie van de afbeelding, zodat hij blijft werken als de shop de
   // originele URL wijzigt of hotlinken blokkeert.
-  let storedImage: string | null = null;
-  if (product.imageUrl) {
-    try {
-      const image = await fetchImage(product.imageUrl, finalUrl);
-      if (image) storedImage = await storeImage(image.bytes, image.contentType);
-    } catch {
-      storedImage = null;
-    }
-  }
+  const storedImage =
+    (await storeRemoteImage(product.imageUrl, finalUrl)) ??
+    (await storeRemoteImage(hints.imageUrl, finalUrl));
 
-  const quality: ScrapeResponse["quality"] = !product.title
+  const quality: ScrapeResponse["quality"] = !title
     ? "failed"
     : product.priceCents === null || !storedImage
       ? "partial"
       : "ok";
 
   return NextResponse.json<ScrapeResponse>({
-    ok: Boolean(product.title),
+    ok: Boolean(title),
     quality,
     product: {
-      title: product.title,
+      title,
       description: product.description,
       priceCents: product.priceCents,
       currency: product.currency ?? "EUR",
       imageUrl: storedImage,
-      merchant: product.merchant,
+      merchant: product.merchant ?? hints.merchant,
       url: finalUrl,
     },
   });

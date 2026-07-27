@@ -130,6 +130,8 @@
   "scrape.failed": "We couldn't read this page. Please fill it in below.",
   "scrape.partial": "We couldn't get everything — please double-check.",
   "scrape.blocked": "This shop blocks automatic reading. Please fill it in yourself.",
+  "scrape.blockedPartial": "{shop} won't let us read the page. We filled in what the link revealed — check the name and add the price yourself.",
+  "scrape.thisShop": "This shop",
   "scrape.invalidUrl": "Paste a complete link, for example https://www.bol.com/…",
   "visitor.byLine": "{name}'s wishlist",
   "visitor.intro": "Click a gift to go to the shop. Let others know what you're buying so nobody buys the same thing.",
