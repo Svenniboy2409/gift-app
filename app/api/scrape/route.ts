@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
-import { extractProduct } from "@/lib/scraper/extract";
+import type { ExtractedProduct } from "@/lib/scraper/extract";
 import { hintsFromUrl } from "@/lib/scraper/from-url";
+import { extractFromHtml, readViaFallbacks } from "@/lib/scraper/readers";
 import { FetchBlockedError, fetchHtml, fetchImage } from "@/lib/scraper/safe-fetch";
 import { storeImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
+
+// De leesdiensten hebben even nodig om een pagina op te halen; de standaard
+// van 10 seconden is dan te krap.
+export const maxDuration = 30;
 
 export type ScrapeResponse = {
   ok: boolean;
@@ -85,70 +90,66 @@ export async function POST(request: Request) {
   // kunnen we uit de ASIN ook de foto opbouwen.
   const hints = hintsFromUrl(url);
 
-  async function fromHintsOnly(reason: string): Promise<Response> {
-    const storedImage = await storeRemoteImage(hints.imageUrl, url!);
-    return NextResponse.json<ScrapeResponse>({
-      ok: Boolean(hints.title),
-      quality: hints.title ? "partial" : "failed",
-      reason,
-      product: {
-        title: hints.title,
-        description: null,
-        priceCents: null,
-        currency: "EUR",
-        imageUrl: storedImage,
-        merchant: hints.merchant,
-        url: url!,
-      },
-    });
-  }
-
-  let html = "";
+  let product: Partial<ExtractedProduct> = {};
   let finalUrl = url;
+  let reason: string | undefined;
+
+  // Stap 1: zelf proberen. Werkt bij de meeste webshops.
   try {
     const page = await fetchHtml(url);
-    html = page.html;
     finalUrl = page.finalUrl;
-    if (!html) {
-      // 403/429 betekent bijna altijd een bot-blokkade van de webshop.
-      return await fromHintsOnly(
-        page.status === 403 || page.status === 429 ? "blocked" : "fetch-failed",
-      );
+    if (page.html) {
+      product = extractFromHtml(page.html, page.finalUrl);
+    } else if (page.status === 403 || page.status === 429) {
+      reason = "blocked";
+    } else {
+      reason = "fetch-failed";
     }
   } catch (error) {
-    const reason =
+    const failure =
       error instanceof FetchBlockedError ? error.message : "fetch-failed";
-    if (reason === "private-address" || reason === "invalid-protocol") {
-      return NextResponse.json({ error: reason }, { status: 400 });
+    if (failure === "private-address" || failure === "invalid-protocol") {
+      return NextResponse.json({ error: failure }, { status: 400 });
     }
-    return await fromHintsOnly(reason);
+    reason = failure;
   }
 
-  const product = extractProduct(html, finalUrl);
+  // Stap 2: geen bruikbare naam? Dan via een gratis leesdienst. Dat gebeurt ook
+  // als de pagina wél binnenkwam: bol.com en Amazon serveren dan een
+  // controlepagina, waarvan de titel gewoon de winkelnaam is.
+  if (!product.title) {
+    const outcome = await readViaFallbacks(url);
+    if (outcome) {
+      product = { ...outcome.product };
+      reason = undefined;
+    } else if (!reason) {
+      reason = "blocked";
+    }
+  }
 
-  // De pagina kwam binnen, maar sommige shops serveren dan alsnog een
-  // controlepagina zonder productgegevens. Dan vult de link het gat.
+  // Stap 3: nog steeds niets? Dan vult de link zelf het gat.
   const title = product.title ?? hints.title;
 
   // Eigen kopie van de afbeelding, zodat hij blijft werken als de shop de
   // originele URL wijzigt of hotlinken blokkeert.
   const storedImage =
-    (await storeRemoteImage(product.imageUrl, finalUrl)) ??
+    (await storeRemoteImage(product.imageUrl ?? null, finalUrl)) ??
     (await storeRemoteImage(hints.imageUrl, finalUrl));
 
   const quality: ScrapeResponse["quality"] = !title
     ? "failed"
-    : product.priceCents === null || !storedImage
+    : product.priceCents == null || !storedImage
       ? "partial"
       : "ok";
 
   return NextResponse.json<ScrapeResponse>({
     ok: Boolean(title),
     quality,
+    reason,
     product: {
       title,
-      description: product.description,
-      priceCents: product.priceCents,
+      description: product.description ?? null,
+      priceCents: product.priceCents ?? null,
       currency: product.currency ?? "EUR",
       imageUrl: storedImage,
       merchant: product.merchant ?? hints.merchant,

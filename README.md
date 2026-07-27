@@ -216,8 +216,28 @@ Grote webshops — bol.com en Amazon voorop — laten geen verzoeken toe die van
 datacenter komen, en daar draait deze app op. Ze kijken naar het IP-adres, niet
 naar wat je meestuurt. Er is dus geen header of instelling die dat omzeilt.
 
-Daarom valt de app terug op wat er in de **link zelf** staat
-(`lib/scraper/from-url.ts`), en dat is verrassend veel:
+Let op: ze sturen daarbij lang niet altijd een foutcode. Amazon geeft een gewone
+`200` terug met een controlepagina waarvan de `<title>` simpelweg "Amazon.nl"
+is. `lib/scraper/junk.ts` herkent dat soort titels — winkelnamen, "Robot Check",
+"Even geduld", foutcodes — en behandelt ze als "niets gevonden", zodat ze nooit
+als productnaam in je lijst belanden.
+
+Vervolgens zijn er twee vangnetten.
+
+**1. Gratis leesdiensten** (`lib/scraper/readers.ts`). Die halen de pagina op
+vanaf hun eigen infrastructuur en geven ons de inhoud terug:
+
+| Dienst | Wat het teruggeeft | Kosten |
+| --- | --- | --- |
+| [r.jina.ai](https://jina.ai/reader/) | de pagina als leesbare tekst, inclusief JavaScript | gratis, geen sleutel nodig |
+| [microlink.io](https://microlink.io) | titel, omschrijving en afbeelding als JSON | gratis tot een bescheiden aantal per dag |
+
+Ze worden alleen aangeroepen als onze eigen poging niets bruikbaars oplevert, en
+we stoppen zodra er één werkt. Elke dienst krijgt 9 seconden, samen maximaal 18;
+daarna gaan we door met wat we hebben. Uit te zetten met `SCRAPER_READERS=off`
+— er gaan alleen openbare productlinks naartoe.
+
+**2. De link zelf** (`lib/scraper/from-url.ts`), als ook dat niets oplevert:
 
 - de productnaam staat meestal letterlijk in het pad —
   `…/p/lego-classic-creatieve-superset-11036/…` wordt "Lego classic creatieve
@@ -227,16 +247,26 @@ Daarom valt de app terug op wat er in de **link zelf** staat
   geen botcontrole
 - de winkelnaam volgt uit het domein
 
-Je houdt dan alleen de prijs over om zelf in te vullen, en de app zegt dat ook
-met zoveel woorden. Toevoegen mislukt dus nooit helemaal.
+Wat er ook misgaat, je krijgt altijd een formulier met zoveel mogelijk
+ingevuld, en de app zegt erbij wat er nog ontbreekt. Toevoegen mislukt dus nooit
+helemaal.
 
-Wil je bol.com en Amazon tóch volledig automatisch, dan is een betaalde
-scraping-dienst (ScrapingBee, Scrapfly, Zyte) de enige route die structureel
-werkt: die draaien vanaf woonhuis-IP's. Dat is een bewuste keuze met een
-prijskaartje, dus die zit niet standaard ingebouwd.
+De volgorde in het kort:
+
+```
+1. zelf ophalen              → werkt bij de meeste webshops
+2. titel rommel?             → dan telt het als "niets gevonden"
+3. r.jina.ai / microlink.io  → gratis, haalt de pagina alsnog op
+4. de link zelf              → productnaam uit het pad, foto via de ASIN
+```
+
+Blijft ook dat te vaak misgaan, dan is een betaalde scraping-dienst
+(ScrapingBee, Scrapfly, Zyte) de enige route die structureel werkt: die draaien
+vanaf woonhuis-IP's. Dat is een bewuste keuze met een prijskaartje, dus die zit
+niet ingebouwd.
 
 Kleinere en middelgrote webshops doen meestal niet aan dit soort blokkades. Daar
-werkt het uitlezen gewoon volledig.
+werkt stap 1 gewoon volledig.
 
 ### Veiligheid van de scraper
 

@@ -146,12 +146,13 @@ async function readCapped(response: Response, limit: number) {
 async function followedFetch(
   startUrl: string,
   headers: Record<string, string>,
+  timeoutMs = TIMEOUT_MS,
 ) {
   let current = startUrl;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const url = await assertPublicUrl(current);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(url, {
         headers,
@@ -177,16 +178,35 @@ export type FetchedPage = {
   status: number;
 };
 
-/** Haalt een HTML-pagina op met alle veiligheidsgrenzen. */
-export async function fetchHtml(rawUrl: string): Promise<FetchedPage> {
-  const { response, finalUrl } = await followedFetch(rawUrl, BROWSER_HEADERS);
+export type FetchOptions = {
+  /** Extra of afwijkende headers, bovenop de browser-set. */
+  headers?: Record<string, string>;
+  /** Ook text/plain en JSON accepteren — nodig voor de leesdiensten. */
+  allowText?: boolean;
+  /** Afwijkende time-out in milliseconden. */
+  timeoutMs?: number;
+};
+
+/** Haalt een pagina op met alle veiligheidsgrenzen. */
+export async function fetchHtml(
+  rawUrl: string,
+  options: FetchOptions = {},
+): Promise<FetchedPage> {
+  const { response, finalUrl } = await followedFetch(
+    rawUrl,
+    { ...BROWSER_HEADERS, ...options.headers },
+    options.timeoutMs,
+  );
 
   if (!response.ok) {
     return { html: "", finalUrl, status: response.status };
   }
 
   const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("html") && !contentType.includes("xml")) {
+  const acceptable = options.allowText
+    ? /html|xml|text\/plain|json/.test(contentType)
+    : /html|xml/.test(contentType);
+  if (!acceptable) {
     throw new FetchBlockedError("not-html");
   }
 
