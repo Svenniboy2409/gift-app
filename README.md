@@ -70,32 +70,22 @@ DATABASE_URL="postgresql://postgres:wenslijst@127.0.0.1:5432/postgres?schema=pub
 Dit hoef je één keer te doen. Je hebt geen ervaring met de commandoregel nodig;
 alles gaat via de website van Vercel. Reken op een kwartier.
 
-### 1. Account en project
+De volgorde hieronder is die van Vercel zelf, en die is even wennen: een
+database koppelen kan pas nadat het project bestaat. Daardoor **mislukt de
+eerste deploy met opzet**. Dat staat bij stap 3 uitgelegd; schrik er niet van.
+
+### 1. Project importeren
 
 1. Ga naar [vercel.com](https://vercel.com) en log in met je GitHub-account.
 2. Klik op **Add New… → Project** en kies de repository `gift-app`.
-3. Klik nog **niet** op Deploy — eerst de instellingen hieronder.
+3. Laat *Application Preset* op **Next.js** staan en *Root Directory* op `./`.
 
-### 2. Database koppelen
+### 2. De inlogsleutel invullen
 
-1. Open in het Vercel-dashboard het tabblad **Storage** en klik op
-   **Create Database → Neon** (Postgres). Kies een regio in Europa.
-2. Koppel de database aan je project. Vercel zet `DATABASE_URL` dan automatisch
-   bij je environment variables.
+Klap op datzelfde scherm, net boven de Deploy-knop, **Environment Variables**
+open en voeg er één toe:
 
-### 3. Afbeeldingen koppelen
-
-1. Nog steeds bij **Storage**: **Create → Blob Store**, en koppel die ook aan je
-   project. Vercel zet dan `BLOB_READ_WRITE_TOKEN` klaar.
-2. Sla je dit over, dan werkt de app verder prima, maar het opslaan van foto's
-   mislukt — het bestandssysteem van Vercel is namelijk alleen-lezen. De app
-   zegt dat dan ook met zoveel woorden.
-
-### 4. De inlogsleutel
-
-Zet bij **Settings → Environment Variables** één variabele met de hand:
-
-| Naam | Waarde |
+| Name | Value |
 | --- | --- |
 | `AUTH_SECRET` | een lange, willekeurige reeks tekens |
 
@@ -104,23 +94,52 @@ er een uit "CodeIgniter Encryption Keys". Of op de commandoregel met
 `openssl rand -base64 32`. Deze sleutel ondertekent de inlog-cookies; houd hem
 geheim en verander hem later niet zomaar, want dan wordt iedereen uitgelogd.
 
-### 5. Deploy
+### 3. Deploy klikken — deze build mislukt, en dat hoort
 
-Klik op **Deploy**. De database-tabellen worden tijdens het bouwen automatisch
-aangemaakt (`prisma migrate deploy` zit in het `build`-script).
+Klik op **Deploy**. Je krijgt na een minuut een rode **Build failed**.
 
-Als het klaar is geeft Vercel je adres, meestal
-`https://gift-app-<iets>.vercel.app`. Dat is het adres van je app. Onder
-**Settings → Domains** kun je er een kortere van maken, bijvoorbeeld
-`wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
+Dat komt doordat het `build`-script `prisma migrate deploy` draait om de
+databasetabellen aan te maken, en er is nog geen database. Dat is precies wat we
+in de volgende stap oplossen. Belangrijk: **het project is nu wél aangemaakt**,
+en daar was deze stap om te doen.
+
+### 4. Database en afbeeldingen koppelen
+
+Je zit nu in het projectdashboard. Daar is wél een tabblad **Storage**, in de
+rij naast Overview, Deployments, Analytics en Settings.
+
+1. **Create Database → Neon** (Postgres), regio in Europa. Koppel hem aan
+   `gift-app`. Vercel zet `DATABASE_URL` automatisch klaar.
+2. **Create → Blob**, ook koppelen aan `gift-app`. Dat zet
+   `BLOB_READ_WRITE_TOKEN`.
+
+Sla je die tweede over, dan werkt de app verder prima, maar het opslaan van
+foto's mislukt — het bestandssysteem van Vercel is alleen-lezen. De app zegt dat
+dan ook met zoveel woorden in plaats van een vage foutmelding.
+
+### 5. Opnieuw deployen
+
+Ga naar het tabblad **Deployments**, klik bij de bovenste (de mislukte) op de
+drie puntjes en kies **Redeploy**. Nu zijn alle variabelen er, worden de
+tabellen aangemaakt en slaagt de build.
+
+Vanaf nu deployt elke push naar `main` automatisch, en gaan wijzigingen aan het
+datamodel vanzelf mee.
+
+### 6. Je adres
+
+Bovenaan het projectdashboard staat je adres, meestal
+`https://gift-app-<iets>.vercel.app`. Dat is het adres van je app; dat deel je
+met familie en vrienden. Onder **Settings → Domains** kun je er een kortere van
+maken, bijvoorbeeld `wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
 
 ### Kort samengevat
 
 | Variabele | Nodig? | Waar vandaan |
 | --- | --- | --- |
-| `DATABASE_URL` | ja | wordt gezet door de Neon/Postgres-koppeling |
-| `AUTH_SECRET` | ja | zelf invullen, willekeurige tekens |
-| `BLOB_READ_WRITE_TOKEN` | voor foto's | wordt gezet door de Blob-koppeling |
+| `DATABASE_URL` | ja | wordt gezet door de Neon/Postgres-koppeling (stap 4) |
+| `AUTH_SECRET` | ja | zelf invullen, willekeurige tekens (stap 2) |
+| `BLOB_READ_WRITE_TOKEN` | voor foto's | wordt gezet door de Blob-koppeling (stap 4) |
 
 ### Waarom niet GitHub Pages?
 
