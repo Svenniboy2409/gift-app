@@ -109,7 +109,13 @@ https://vercel.com/<jouw-team>/gift-app/stores
 ```
 
 Klik daar op **Create Database → Neon** (Postgres), kies een regio in Europa en
-koppel hem aan `gift-app`. `DATABASE_URL` wordt dan automatisch gezet.
+koppel hem aan `gift-app`. Laat *Custom Environment Variable Prefix* leeg en de
+vinkjes bij *Create Database Branch For Deployment* uit.
+
+Neon zet dan twee variabelen: `DATABASE_URL` (via een connectiepooler, voor de
+app) en `DATABASE_URL_UNPOOLED` (een directe verbinding). Beide worden herkend —
+de migraties nemen automatisch de directe verbinding, want daar werken ze niet
+betrouwbaar doorheen een pooler.
 
 **Werkt die pagina niet mee?** Vercel verhuist zijn opslag-aanbod met enige
 regelmaat. Deze route werkt altijd, ongeacht hun indeling:
@@ -119,6 +125,10 @@ regelmaat. Deze route werkt altijd, ongeacht hun indeling:
 3. Kopieer de **connection string** (begint met `postgresql://`)
 4. Plak die bij Vercel als `DATABASE_URL`, via
    `https://vercel.com/<jouw-team>/gift-app/settings/environment-variables`
+
+Krijg je van je hoster alleen een gepoolde verbinding, zet dan daarnaast
+`DIRECT_URL` op de ongepoolde variant. Zonder pooler — lokaal, of bij zelf
+hosten — hoef je niets extra's te doen.
 
 ### 5. Foto's koppelen (kan ook later)
 
@@ -151,6 +161,7 @@ maken, bijvoorbeeld `wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
 | Variabele | Nodig? | Waar vandaan |
 | --- | --- | --- |
 | `DATABASE_URL` | ja | wordt gezet door de Neon/Postgres-koppeling (stap 4) |
+| `DIRECT_URL` | alleen bij een pooler | ongepoolde verbinding voor migraties; Neons `DATABASE_URL_UNPOOLED` wordt vanzelf herkend |
 | `AUTH_SECRET` | ja | zelf invullen, willekeurige tekens (stap 2) |
 | `BLOB_READ_WRITE_TOKEN` | voor foto's | wordt gezet door de Blob-koppeling (stap 4) |
 
