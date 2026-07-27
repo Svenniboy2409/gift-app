@@ -1,10 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { missingConfig } from "@/lib/config";
 import { getTranslator } from "@/lib/i18n/server";
+import { SetupNotice } from "@/components/setup-notice";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
 export default async function HomePage() {
+  // Vlak na een eerste deploy is er nog geen database of inlogsleutel. Toon
+  // dan uitleg in plaats van te klappen op de eerste query.
+  const missing = missingConfig();
+  if (missing.length > 0) return <SetupNotice missing={missing} />;
+
   const user = await getCurrentUser();
   if (user) redirect("/dashboard");
 

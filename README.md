@@ -70,9 +70,9 @@ DATABASE_URL="postgresql://postgres:wenslijst@127.0.0.1:5432/postgres?schema=pub
 Dit hoef je één keer te doen. Je hebt geen ervaring met de commandoregel nodig;
 alles gaat via de website van Vercel. Reken op een kwartier.
 
-De volgorde hieronder is die van Vercel zelf, en die is even wennen: een
-database koppelen kan pas nadat het project bestaat. Daardoor **mislukt de
-eerste deploy met opzet**. Dat staat bij stap 3 uitgelegd; schrik er niet van.
+Op Vercel kun je pas een database koppelen nádat het project bestaat. De app is
+daarop ingericht: de eerste deploy slaagt ook zonder database, en op je verse
+adres staat dan een pagina die vertelt wat er nog moet gebeuren.
 
 ### 1. Project importeren
 
@@ -94,39 +94,52 @@ er een uit "CodeIgniter Encryption Keys". Of op de commandoregel met
 `openssl rand -base64 32`. Deze sleutel ondertekent de inlog-cookies; houd hem
 geheim en verander hem later niet zomaar, want dan wordt iedereen uitgelogd.
 
-### 3. Deploy klikken — deze build mislukt, en dat hoort
+### 3. Deploy klikken
 
-Klik op **Deploy**. Je krijgt na een minuut een rode **Build failed**.
+Klik op **Deploy**. Na een paar minuten heb je een adres. Open het: je ziet een
+pagina die zegt dat de database nog ontbreekt. Dat klopt — die koppelen we nu.
 
-Dat komt doordat het `build`-script `prisma migrate deploy` draait om de
-databasetabellen aan te maken, en er is nog geen database. Dat is precies wat we
-in de volgende stap oplossen. Belangrijk: **het project is nu wél aangemaakt**,
-en daar was deze stap om te doen.
+### 4. Database koppelen
 
-### 4. Database en afbeeldingen koppelen
+Ga naar de opslagpagina van je project. Op je telefoon is de tabbladenrij
+zijwaarts te scrollen, dus makkelijker is het om het adres direct in te typen:
 
-Je zit nu in het projectdashboard. Daar is wél een tabblad **Storage**, in de
-rij naast Overview, Deployments, Analytics en Settings.
+```
+https://vercel.com/<jouw-team>/gift-app/stores
+```
 
-1. **Create Database → Neon** (Postgres), regio in Europa. Koppel hem aan
-   `gift-app`. Vercel zet `DATABASE_URL` automatisch klaar.
-2. **Create → Blob**, ook koppelen aan `gift-app`. Dat zet
-   `BLOB_READ_WRITE_TOKEN`.
+Klik daar op **Create Database → Neon** (Postgres), kies een regio in Europa en
+koppel hem aan `gift-app`. `DATABASE_URL` wordt dan automatisch gezet.
 
-Sla je die tweede over, dan werkt de app verder prima, maar het opslaan van
-foto's mislukt — het bestandssysteem van Vercel is alleen-lezen. De app zegt dat
-dan ook met zoveel woorden in plaats van een vage foutmelding.
+**Werkt die pagina niet mee?** Vercel verhuist zijn opslag-aanbod met enige
+regelmaat. Deze route werkt altijd, ongeacht hun indeling:
 
-### 5. Opnieuw deployen
+1. Maak een gratis account op [neon.tech](https://neon.tech)
+2. Maak een project aan, regio *Europe (Frankfurt)*
+3. Kopieer de **connection string** (begint met `postgresql://`)
+4. Plak die bij Vercel als `DATABASE_URL`, via
+   `https://vercel.com/<jouw-team>/gift-app/settings/environment-variables`
 
-Ga naar het tabblad **Deployments**, klik bij de bovenste (de mislukte) op de
-drie puntjes en kies **Redeploy**. Nu zijn alle variabelen er, worden de
-tabellen aangemaakt en slaagt de build.
+### 5. Foto's koppelen (kan ook later)
+
+Op dezelfde opslagpagina: **Create → Blob**, koppelen aan `gift-app`. Dat zet
+`BLOB_READ_WRITE_TOKEN`.
+
+Sla je dit over, dan werkt de app volledig, behalve het uploaden van een eigen
+foto — het bestandssysteem van Vercel is namelijk alleen-lezen. De app zegt dat
+dan ook met zoveel woorden in plaats van een vage foutmelding. Foto's die uit een
+productlink komen worden wél gewoon opgehaald.
+
+### 6. Opnieuw deployen
+
+Ga naar het tabblad **Deployments**, klik bij de bovenste op de drie puntjes en
+kies **Redeploy**. Nu zijn alle variabelen er, worden de databasetabellen
+aangemaakt en is de app in gebruik.
 
 Vanaf nu deployt elke push naar `main` automatisch, en gaan wijzigingen aan het
 datamodel vanzelf mee.
 
-### 6. Je adres
+### 7. Je adres
 
 Bovenaan het projectdashboard staat je adres, meestal
 `https://gift-app-<iets>.vercel.app`. Dat is het adres van je app; dat deel je
@@ -198,9 +211,11 @@ npm run typecheck # TypeScript
 npm run test:e2e  # Playwright: registreren → lijst → claimen → verrassing
 ```
 
-Het `build`-script draait ook `prisma migrate deploy`, zodat de tabellen op
-Vercel vanzelf goed komen te staan. Wil je bouwen zonder database in de buurt,
-gebruik dan `npm run build:no-db`.
+Het `build`-script draait via `scripts/migrate.mjs` ook de migraties, zodat de
+tabellen op Vercel vanzelf goed komen te staan. Is er geen `DATABASE_URL`, dan
+worden die stilletjes overgeslagen en slaagt de build alsnog — dat is precies
+wat een eerste deploy op Vercel nodig heeft. Is er wél een database en gaat de
+migratie mis, dan faalt de build zoals het hoort.
 
 De e2e-test bouwt en start de app zelf op poort 3100 en heeft een database
 nodig. Gebruikt jouw omgeving een Chromium die niet bij de Playwright-versie

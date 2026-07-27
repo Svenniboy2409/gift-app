@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isConfigured } from "@/lib/config";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
 export default async function AppLayout({
@@ -7,6 +8,9 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Nog niet ingesteld? Dan naar de startpagina, die legt uit wat er mist.
+  if (!isConfigured()) redirect("/");
+
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 

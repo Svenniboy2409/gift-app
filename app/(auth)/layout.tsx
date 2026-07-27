@@ -1,10 +1,16 @@
+import { redirect } from "next/navigation";
+import { isConfigured } from "@/lib/config";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Inloggen kan niet zonder database en inlogsleutel; de startpagina legt uit
+  // wat er nog mist.
+  if (!isConfigured()) redirect("/");
+
   return (
     <>
       <SiteHeader />
