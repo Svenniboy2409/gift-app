@@ -1,13 +1,11 @@
 {
   "app.name": "Wenslijst",
   "app.tagline": "Plak een link, wij vullen de rest in.",
-
   "nav.dashboard": "Mijn lijsten",
   "nav.settings": "Instellingen",
   "nav.logout": "Uitloggen",
   "nav.login": "Inloggen",
   "nav.register": "Account maken",
-
   "landing.title": "Verlanglijstjes die zichzelf invullen",
   "landing.subtitle": "Plak de link van een product en Wenslijst haalt automatisch de naam, de foto en de prijs op. Deel je lijst met één link en niemand koopt meer hetzelfde cadeau.",
   "landing.cta": "Begin gratis",
@@ -20,7 +18,6 @@
   "landing.step3.body": "Eén link naar familie en vrienden. Zij zien wat al gekocht is, jij niet.",
   "landing.surprise.title": "De verrassing blijft",
   "landing.surprise.body": "Wie een cadeau claimt is zichtbaar voor andere bezoekers, maar nooit voor jou. Zo weet niemand dubbel te kopen en blijf jij verrast.",
-
   "auth.name": "Naam",
   "auth.email": "E-mailadres",
   "auth.password": "Wachtwoord",
@@ -32,7 +29,6 @@
   "auth.loginSubmit": "Inloggen",
   "auth.noAccount": "Nog geen account?",
   "auth.hasAccount": "Heb je al een account?",
-
   "error.invalid": "Controleer je invoer.",
   "error.required": "Dit veld is verplicht.",
   "error.too-short": "Dit is te kort.",
@@ -45,8 +41,9 @@
   "error.handle-too-short": "Gebruik minstens 3 tekens.",
   "error.handle-invalid": "Gebruik alleen letters, cijfers en streepjes.",
   "error.invalid-url": "Dat is geen geldige link.",
+  "error.storage-unconfigured": "Foto's opslaan werkt nog niet op deze server. Zet BLOB_READ_WRITE_TOKEN in de instellingen (zie README).",
+  "error.image-too-large": "Deze foto is te groot. Kies er een van maximaal 5 MB.",
   "error.generic": "Er ging iets mis. Probeer het opnieuw.",
-
   "dashboard.title": "Mijn lijsten",
   "dashboard.subtitle": "Maak een lijst per gelegenheid en deel hem met wie je wil.",
   "dashboard.newList": "Nieuwe lijst",
@@ -55,7 +52,6 @@
   "dashboard.giftCount": "{count} cadeau's",
   "dashboard.giftCountOne": "1 cadeau",
   "dashboard.giftCountZero": "Nog geen cadeau's",
-
   "list.new.title": "Nieuwe lijst",
   "list.edit.title": "Lijst bewerken",
   "list.field.title": "Naam van de lijst",
@@ -72,7 +68,6 @@
   "list.deleteConfirm": "Weet je het zeker? De lijst en alle cadeau's worden verwijderd.",
   "list.settings": "Instellingen van de lijst",
   "list.back": "Terug naar mijn lijsten",
-
   "occasion.BIRTHDAY": "Verjaardag",
   "occasion.CHRISTMAS": "Kerst",
   "occasion.SINTERKLAAS": "Sinterklaas",
@@ -81,21 +76,18 @@
   "occasion.HOUSEWARMING": "Housewarming",
   "occasion.GRADUATION": "Geslaagd",
   "occasion.OTHER": "Anders",
-
   "visibility.PRIVATE": "Alleen ik",
   "visibility.PRIVATE.hint": "De deel-link werkt niet.",
   "visibility.LINK": "Iedereen met de link",
   "visibility.LINK.hint": "Niet te vinden via Google of je profiel.",
   "visibility.PUBLIC": "Ook op mijn profiel",
   "visibility.PUBLIC.hint": "Zichtbaar op je profielpagina.",
-
   "color.terracotta": "Terracotta",
   "color.olive": "Olijf",
   "color.plum": "Pruim",
   "color.ocean": "Oceaan",
   "color.amber": "Amber",
   "color.rose": "Roze",
-
   "share.title": "Deel deze lijst",
   "share.body": "Iedereen met deze link kan je lijst bekijken en cadeaus claimen.",
   "share.copy": "Link kopiëren",
@@ -105,7 +97,6 @@
   "share.regenerateConfirm": "De oude link werkt daarna niet meer. Doorgaan?",
   "share.profile": "Je profiel",
   "share.disabled": "Deze lijst staat op 'Alleen ik' en is niet te delen.",
-
   "gift.addTitle": "Cadeau toevoegen",
   "gift.pastePlaceholder": "Plak hier een link naar een product…",
   "gift.fetch": "Ophalen",
@@ -133,16 +124,13 @@
   "gift.viewInShop": "Naar de winkel",
   "gift.moveUp": "Omhoog",
   "gift.moveDown": "Omlaag",
-
   "priority.1": "Leuk",
   "priority.2": "Graag",
   "priority.3": "Heel graag",
-
   "scrape.failed": "We konden deze pagina niet uitlezen. Vul het hieronder zelf in.",
   "scrape.partial": "Niet alles is gelukt — controleer de gegevens even.",
   "scrape.blocked": "Deze webshop blokkeert automatische uitlezing. Vul het zelf in.",
   "scrape.invalidUrl": "Plak een volledige link, bijvoorbeeld https://www.bol.com/…",
-
   "visitor.byLine": "Verlanglijstje van {name}",
   "visitor.intro": "Klik op een cadeau om naar de winkel te gaan. Laat weten wat je koopt, dan koopt niemand anders hetzelfde.",
   "visitor.hiddenNotice": "{name} kan niet zien wat er geclaimd is — de verrassing blijft dus intact.",
@@ -164,11 +152,9 @@
   "visitor.countdown.days": "Nog {count} dagen",
   "visitor.countdown.day": "Nog 1 dag",
   "visitor.countdown.past": "Geweest op {date}",
-
   "profile.title": "Lijsten van {name}",
   "profile.empty": "{name} heeft nog geen openbare lijsten.",
   "profile.notFound": "Dit profiel bestaat niet.",
-
   "settings.title": "Instellingen",
   "settings.profile": "Profiel",
   "settings.handle": "Profielnaam",
@@ -180,7 +166,6 @@
   "settings.save": "Opslaan",
   "settings.saved": "Opgeslagen.",
   "settings.passwordChanged": "Je wachtwoord is gewijzigd.",
-
   "theme.toggle": "Thema wisselen",
   "language.nl": "Nederlands",
   "language.en": "English",

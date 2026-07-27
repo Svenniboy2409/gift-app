@@ -91,11 +91,23 @@ export function GiftEditor({
       const body = new FormData();
       body.set("file", file);
       const response = await fetch("/api/upload", { method: "POST", body });
-      if (!response.ok) throw new Error("upload-failed");
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(data?.error ?? "upload-failed");
+      }
       const data = (await response.json()) as { url: string };
       setImageUrl(data.url);
-    } catch {
-      setUploadError(t("error.generic"));
+    } catch (error) {
+      const reason = (error as Error).message;
+      setUploadError(
+        reason === "storage-unconfigured"
+          ? t("error.storage-unconfigured")
+          : reason === "too-large"
+            ? t("error.image-too-large")
+            : t("error.generic"),
+      );
     } finally {
       setUploading(false);
     }

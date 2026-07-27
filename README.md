@@ -7,6 +7,16 @@ cadeaus staan in lijsten die je met één link deelt met familie en vrienden.
 **De verrassing blijft intact:** bezoekers zien welke cadeaus al geclaimd zijn,
 maar de eigenaar van de lijst ziet dat nooit.
 
+> **Waar staat de app online?**
+> Nog nergens — die moet je één keer zelf deployen, zie
+> [Online zetten](#online-zetten-op-vercel). Daarna krijg je een adres als
+> `https://wenslijst.vercel.app`.
+>
+> **GitHub Pages werkt hier niet voor.** Pages kan alleen kant-en-klare
+> bestanden serveren, terwijl deze app een draaiende server nodig heeft (om
+> productlinks uit te lezen, in te loggen en lijsten op te slaan) plus een
+> database. `svenniboy2409.github.io/gift-app` zal daarom altijd leeg blijven.
+
 ## Wat de app doet
 
 - **Link plakken → alles ingevuld.** Titel, omschrijving, prijs, afbeelding en
@@ -55,21 +65,70 @@ Zet dan in `.env`:
 DATABASE_URL="postgresql://postgres:wenslijst@127.0.0.1:5432/postgres?schema=public"
 ```
 
-## Deployen op Vercel
+## Online zetten (op Vercel)
 
-1. Push de repository naar GitHub en importeer hem in Vercel.
-2. Maak een Postgres-database aan (Vercel Postgres, Neon of Supabase) en zet de
-   connection string als `DATABASE_URL` bij de environment variables.
-3. Zet `AUTH_SECRET` op de uitkomst van `openssl rand -base64 32`.
-4. **Aanbevolen:** maak een Vercel Blob-store aan en zet
-   `BLOB_READ_WRITE_TOKEN`. Zonder die variabele worden afbeeldingen naar
-   `public/uploads` geschreven, en dat bestandssysteem is op Vercel niet
-   blijvend schrijfbaar. Lokaal en bij zelf hosten werkt het wél zonder token.
-5. Draai de migraties één keer tegen de productiedatabase:
-   `DATABASE_URL="…" npx prisma migrate deploy`.
+Dit hoef je één keer te doen. Je hebt geen ervaring met de commandoregel nodig;
+alles gaat via de website van Vercel. Reken op een kwartier.
 
-Het `build`-script draait `prisma generate` automatisch, dus verder is er niets
-in te stellen.
+### 1. Account en project
+
+1. Ga naar [vercel.com](https://vercel.com) en log in met je GitHub-account.
+2. Klik op **Add New… → Project** en kies de repository `gift-app`.
+3. Klik nog **niet** op Deploy — eerst de instellingen hieronder.
+
+### 2. Database koppelen
+
+1. Open in het Vercel-dashboard het tabblad **Storage** en klik op
+   **Create Database → Neon** (Postgres). Kies een regio in Europa.
+2. Koppel de database aan je project. Vercel zet `DATABASE_URL` dan automatisch
+   bij je environment variables.
+
+### 3. Afbeeldingen koppelen
+
+1. Nog steeds bij **Storage**: **Create → Blob Store**, en koppel die ook aan je
+   project. Vercel zet dan `BLOB_READ_WRITE_TOKEN` klaar.
+2. Sla je dit over, dan werkt de app verder prima, maar het opslaan van foto's
+   mislukt — het bestandssysteem van Vercel is namelijk alleen-lezen. De app
+   zegt dat dan ook met zoveel woorden.
+
+### 4. De inlogsleutel
+
+Zet bij **Settings → Environment Variables** één variabele met de hand:
+
+| Naam | Waarde |
+| --- | --- |
+| `AUTH_SECRET` | een lange, willekeurige reeks tekens |
+
+Een goede waarde maak je op [randomkeygen.com](https://randomkeygen.com) — pak
+er een uit "CodeIgniter Encryption Keys". Of op de commandoregel met
+`openssl rand -base64 32`. Deze sleutel ondertekent de inlog-cookies; houd hem
+geheim en verander hem later niet zomaar, want dan wordt iedereen uitgelogd.
+
+### 5. Deploy
+
+Klik op **Deploy**. De database-tabellen worden tijdens het bouwen automatisch
+aangemaakt (`prisma migrate deploy` zit in het `build`-script).
+
+Als het klaar is geeft Vercel je adres, meestal
+`https://gift-app-<iets>.vercel.app`. Dat is het adres van je app. Onder
+**Settings → Domains** kun je er een kortere van maken, bijvoorbeeld
+`wenslijst.vercel.app`, of je eigen domeinnaam koppelen.
+
+### Kort samengevat
+
+| Variabele | Nodig? | Waar vandaan |
+| --- | --- | --- |
+| `DATABASE_URL` | ja | wordt gezet door de Neon/Postgres-koppeling |
+| `AUTH_SECRET` | ja | zelf invullen, willekeurige tekens |
+| `BLOB_READ_WRITE_TOKEN` | voor foto's | wordt gezet door de Blob-koppeling |
+
+### Waarom niet GitHub Pages?
+
+GitHub Pages serveert alleen kant-en-klare bestanden. Deze app moet bij elk
+bezoek dingen op de server doen: een productpagina ophalen en uitlezen,
+wachtwoorden controleren, lijsten en claims opslaan in een database. Dat kan
+Pages niet, ongeacht de instellingen. Vercel, Netlify, Railway, Render of een
+eigen server met Docker kunnen het wél.
 
 ## Hoe het uitlezen van links werkt
 
@@ -119,6 +178,10 @@ npm test          # unit tests (prijzen, extractie, SSRF-blokkade)
 npm run typecheck # TypeScript
 npm run test:e2e  # Playwright: registreren → lijst → claimen → verrassing
 ```
+
+Het `build`-script draait ook `prisma migrate deploy`, zodat de tabellen op
+Vercel vanzelf goed komen te staan. Wil je bouwen zonder database in de buurt,
+gebruik dan `npm run build:no-db`.
 
 De e2e-test bouwt en start de app zelf op poort 3100 en heeft een database
 nodig. Gebruikt jouw omgeving een Chromium die niet bij de Playwright-versie

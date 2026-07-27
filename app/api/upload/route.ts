@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
-import { storeImage } from "@/lib/storage";
+import { StorageError, storeImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -38,6 +38,13 @@ export async function POST(request: Request) {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const url = await storeImage(bytes, file.type);
-  return NextResponse.json({ url });
+  try {
+    const url = await storeImage(bytes, file.type);
+    return NextResponse.json({ url });
+  } catch (error) {
+    if (error instanceof StorageError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+    throw error;
+  }
 }

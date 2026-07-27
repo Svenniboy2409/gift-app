@@ -23,6 +23,8 @@ export function extensionFor(contentType: string) {
  * want het bestandssysteem daar is niet schrijfbaar). Zonder token schrijven we
  * naar public/uploads, wat prima werkt bij lokaal draaien of zelf hosten.
  */
+export class StorageError extends Error {}
+
 export async function storeImage(
   bytes: Uint8Array,
   contentType: string,
@@ -40,7 +42,18 @@ export async function storeImage(
   }
 
   const directory = path.join(process.cwd(), "public", "uploads");
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, name), bytes);
+  try {
+    await mkdir(directory, { recursive: true });
+    await writeFile(path.join(directory, name), bytes);
+  } catch (error) {
+    // Op Vercel is het bestandssysteem alleen-lezen. Zonder Blob-token loopt
+    // het opslaan daar dus stuk; geef dat als duidelijke oorzaak terug in
+    // plaats van een kale 500.
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "EROFS" || code === "EACCES" || code === "EPERM") {
+      throw new StorageError("storage-unconfigured");
+    }
+    throw error;
+  }
   return `/uploads/${name}`;
 }
