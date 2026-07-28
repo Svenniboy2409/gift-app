@@ -5,6 +5,7 @@ import { isConfigured } from "@/lib/config";
 import { getListsForOwner } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
 import { looksLikeJunkImage } from "@/lib/scraper/junk";
+import { merchantFromHost } from "@/lib/scraper/sites";
 import { AddFromBookmarklet } from "@/components/add-from-bookmarklet";
 import { Logo } from "@/components/logo";
 import { SiteFooter } from "@/components/site-header";
@@ -25,6 +26,20 @@ type Params = Promise<{
 function safeUrl(value: string | undefined) {
   if (!value || !/^https?:\/\//i.test(value)) return "";
   return value.slice(0, 2000);
+}
+
+/**
+ * De winkelnaam uit de link, zodat een cadeau dat via de bewaarknop binnenkomt
+ * hetzelfde winkellabel krijgt als een cadeau dat via een geplakte link is
+ * toegevoegd. Dezelfde afleiding als in de scan-route.
+ */
+function merchantFor(url: string) {
+  if (!url) return "";
+  try {
+    return merchantFromHost(new URL(url).hostname);
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -94,6 +109,7 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
               price: (params.price ?? "").slice(0, 20),
               currency: (params.currency ?? "EUR").slice(0, 3).toUpperCase(),
               url: safeUrl(params.url),
+              merchant: merchantFor(safeUrl(params.url)),
               imageUrl: looksLikeJunkImage(image) ? (choices[0] ?? "") : image,
             }}
             imageChoices={choices}

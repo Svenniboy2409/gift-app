@@ -326,3 +326,31 @@ test("op het bewaarscherm kun je een andere foto aanwijzen", async ({ page }) =>
   await expect(keuzes.nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(keuzes.nth(0)).toHaveAttribute("aria-pressed", "false");
 });
+
+test("noteert de winkelnaam bij een cadeau uit de bewaarknop", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("Naam").fill("Winkel Tester");
+  await page.getByLabel("E-mailadres").fill(`bm5-${Date.now()}@example.com`);
+  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
+  await page.getByRole("button", { name: "Account maken" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByLabel("Naam van de lijst").fill("Techniek");
+  await page.getByRole("button", { name: "Lijst maken" }).click();
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+
+  // Zoals de bewaarknop hem opent vanaf een bol.com-productpagina.
+  await page.goto(
+    "/add?title=Apple%2020W%20Power%20adapter&price=19.99" +
+      "&url=" +
+      encodeURIComponent("https://www.bol.com/nl/nl/p/apple-20w-power-adapter/9300000123/"),
+  );
+  await page.getByRole("button", { name: "Cadeau opslaan" }).click();
+  await expect(page.getByText("Toegevoegd!")).toBeVisible();
+
+  // In de lijst hoort het winkellabel te staan, net als bij een geplakte link.
+  await page.goto("/dashboard");
+  await page.getByText("Techniek").click();
+  const kaart = page.locator("li").filter({ hasText: "Apple 20W Power adapter" });
+  await expect(kaart.getByText("bol", { exact: true })).toBeVisible();
+});
