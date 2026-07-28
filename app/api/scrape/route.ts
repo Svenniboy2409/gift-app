@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ExtractedProduct } from "@/lib/scraper/extract";
 import { hintsFromUrl } from "@/lib/scraper/from-url";
+import { looksLikeJunkImage } from "@/lib/scraper/junk";
 import {
   extractFromHtml,
   gatherProductData,
@@ -62,7 +63,10 @@ function normalizeUrl(input: string) {
  * — dus we proberen dat eerst.
  */
 async function storeRemoteImage(imageUrl: string | null, referer: string) {
-  if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) return null;
+  // Laatste zeef: een foutpagina-illustratie mag nooit als productfoto eindigen,
+  // via welke route hij ook binnenkwam.
+  if (looksLikeJunkImage(imageUrl)) return null;
+  if (!imageUrl) return null;
 
   try {
     const image = await fetchImage(imageUrl, referer);

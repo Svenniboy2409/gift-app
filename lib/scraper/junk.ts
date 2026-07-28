@@ -19,6 +19,12 @@ const JUNK_PATTERNS = [
   /are you (a )?human/i,
   /bot detect/i,
   /sorry[!,.]? (something|iets)/i,
+  // bol.com's foutpagina heet "Oeps! Er ging iets mis".
+  /^oeps\b/i,
+  /er ging iets mis/i,
+  /something went wrong/i,
+  /er is iets misgegaan/i,
+  /probeer het (later )?(nog eens|opnieuw)/i,
   /^(page|pagina) niet gevonden/i,
   /^(404|403|429|503)\b/,
   /not found/i,
@@ -79,6 +85,36 @@ export function looksLikeJunkTitle(
   if (!/\p{L}/u.test(text)) return true;
 
   return false;
+}
+
+/**
+ * Afbeeldingen die bij een fout- of controlepagina horen in plaats van bij een
+ * product. bol.com serveert bijvoorbeeld een illustratie met "Oeps" erop; zonder
+ * deze controle belandt die als productfoto in je lijst.
+ */
+const JUNK_IMAGE_PATTERNS = [
+  /\boeps\b/i,
+  /\boops\b/i,
+  /\berror\b/i,
+  /\bfout(melding)?\b/i,
+  /\b404\b/i,
+  /not[-_]?found/i,
+  /placeholder/i,
+  /no[-_]?image/i,
+  /geen[-_]?afbeelding/i,
+  /default[-_](image|thumb)/i,
+  /coming[-_]?soon/i,
+  /\bsprite\b/i,
+  /\blogo\b/i,
+  /\bfavicon\b/i,
+  /\bicon\b/i,
+];
+
+/** Is dit een productfoto, of het plaatje van een foutpagina? */
+export function looksLikeJunkImage(url: string | null | undefined): boolean {
+  if (!url) return true;
+  if (!/^https?:\/\//i.test(url)) return true;
+  return JUNK_IMAGE_PATTERNS.some((pattern) => pattern.test(url));
 }
 
 /** Geeft de titel terug, of null als het rommel is. */

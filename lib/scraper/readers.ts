@@ -2,7 +2,11 @@ import "server-only";
 
 import type { ExtractedProduct } from "@/lib/scraper/extract";
 import { extractProduct } from "@/lib/scraper/extract";
-import { cleanTitle } from "@/lib/scraper/junk";
+import {
+  cleanTitle,
+  looksLikeJunkImage,
+  looksLikeJunkTitle,
+} from "@/lib/scraper/junk";
 import { parsePrice } from "@/lib/scraper/price";
 import { fetchHtml } from "@/lib/scraper/safe-fetch";
 
@@ -200,6 +204,10 @@ export function parseReaderText(
 
   if (!looksLikeHtml) return parseJinaMarkdown(body, pageUrl);
 
+  // Foutpagina? Dan is alles erop onbruikbaar, ook de tekst eronder.
+  const $title = /<title[^>]*>([^<]*)<\/title>/i.exec(body)?.[1]?.trim();
+  if (isErrorPage($title, safeHostname(pageUrl))) return {};
+
   // Ook bij HTML nog even door de tekstvorm halen: soms staat de prijs wel in
   // de zichtbare tekst maar niet in de metadata.
   const fromHtml = extractFromHtml(body, pageUrl);
@@ -216,10 +224,9 @@ export function parseJinaMarkdown(
 ): Partial<ExtractedProduct> {
   const hostname = safeHostname(pageUrl);
 
-  const title = cleanTitle(
-    /^Title:\s*(.+)$/m.exec(text)?.[1]?.trim() ?? null,
-    hostname,
-  );
+  const rawTitle = /^Title:\s*(.+)$/m.exec(text)?.[1]?.trim() ?? null;
+  if (isErrorPage(rawTitle, hostname)) return {};
+  const title = cleanTitle(rawTitle, hostname);
 
   // Eerste markdown-afbeelding die niet op een logo of icoon lijkt.
   let imageUrl: string | null = null;
@@ -227,7 +234,8 @@ export function parseJinaMarkdown(
   let match: RegExpExecArray | null;
   while ((match = imagePattern.exec(text)) !== null) {
     const candidate = match[1];
-    if (/logo|icon|sprite|pixel|avatar|badge|flag/i.test(candidate)) continue;
+    if (looksLikeJunkImage(candidate)) continue;
+    if (/pixel|avatar|badge|flag/i.test(candidate)) continue;
     imageUrl = candidate;
     break;
   }
@@ -267,15 +275,16 @@ export function parseMicrolink(
   const data = (payload as { data?: Record<string, unknown> }).data;
   if (!data) return {};
 
+  const hostname = safeHostname(pageUrl);
+  const rawTitle = typeof data.title === "string" ? data.title : null;
+  if (isErrorPage(rawTitle, hostname)) return {};
+
   const image = data.image as { url?: string } | string | undefined;
-  const imageUrl =
-    typeof image === "string" ? image : (image?.url ?? null);
+  const candidate = typeof image === "string" ? image : (image?.url ?? null);
+  const imageUrl = looksLikeJunkImage(candidate) ? null : candidate;
 
   return {
-    title: cleanTitle(
-      typeof data.title === "string" ? data.title : null,
-      safeHostname(pageUrl),
-    ),
+    title: cleanTitle(rawTitle, hostname),
     description:
       typeof data.description === "string" ? data.description : null,
     imageUrl,
@@ -293,10 +302,31 @@ function safeHostname(url: string) {
 }
 
 
+/**
+ * Herkent een pagina die niet het product toont maar een fout- of
+ * controlepagina. Dan deugt niet alleen de titel niet, maar de hele pagina:
+ * bol.com stuurt bijvoorbeeld een foutpagina mét een eigen og:image ("Oeps"),
+ * die anders als productfoto in de lijst belandt.
+ */
+function isErrorPage(title: string | null | undefined, hostname?: string) {
+  return Boolean(title) && looksLikeJunkTitle(title, hostname);
+}
+
 /** Leest een pagina die we via een dienst binnenkregen als gewone HTML. */
-export function extractFromHtml(html: string, pageUrl: string) {
+export function extractFromHtml(
+  html: string,
+  pageUrl: string,
+): Partial<ExtractedProduct> {
+  const hostname = safeHostname(pageUrl);
   const product = extractProduct(html, pageUrl);
-  return { ...product, title: cleanTitle(product.title, safeHostname(pageUrl)) };
+
+  if (isErrorPage(product.title, hostname)) return {};
+
+  return {
+    ...product,
+    title: cleanTitle(product.title, hostname),
+    imageUrl: looksLikeJunkImage(product.imageUrl) ? null : product.imageUrl,
+  };
 }
 
 /* --- De keten: per veld aanvullen ---------------------------------------- */

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { cleanTitle, looksLikeJunkTitle } from "@/lib/scraper/junk";
+import {
+  cleanTitle,
+  looksLikeJunkImage,
+  looksLikeJunkTitle,
+} from "@/lib/scraper/junk";
 
 describe("looksLikeJunkTitle", () => {
   it("herkent de winkelnaam als titel", () => {
@@ -74,5 +78,36 @@ describe("foutpagina's van de leesdiensten", () => {
   it("laat producten met een cijfer of adres in de naam met rust", () => {
     expect(looksLikeJunkTitle("Sonos Era 100 draadloze speaker")).toBe(false);
     expect(looksLikeJunkTitle("BILLY boekenkast 80x28x202 cm")).toBe(false);
+  });
+});
+
+describe("looksLikeJunkImage", () => {
+  it("weigert de illustratie van een foutpagina", () => {
+    // bol.com serveert bij een fout een plaatje met "Oeps" erop; die belandde
+    // als productfoto in de lijst.
+    expect(looksLikeJunkImage("https://s.s-bol.com/nl/static/oeps.png")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/img/oops-404.jpg")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/error-page.png")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/no-image.png")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/placeholder.jpg")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/geen-afbeelding.png")).toBe(true);
+  });
+
+  it("weigert logo's, iconen en niet-URL's", () => {
+    expect(looksLikeJunkImage("https://shop.nl/logo.svg")).toBe(true);
+    expect(looksLikeJunkImage("https://shop.nl/favicon.ico")).toBe(true);
+    expect(looksLikeJunkImage("data:image/png;base64,AAA")).toBe(true);
+    expect(looksLikeJunkImage("/relatief/pad.jpg")).toBe(true);
+    expect(looksLikeJunkImage(null)).toBe(true);
+  });
+
+  it("laat echte productfoto's door", () => {
+    expect(
+      looksLikeJunkImage("https://media.s-bol.com/AbCd/550x496.jpg"),
+    ).toBe(false);
+    expect(
+      looksLikeJunkImage("https://m.media-amazon.com/images/I/71abc._AC_SL1500_.jpg"),
+    ).toBe(false);
+    expect(looksLikeJunkImage("https://cdn.hema.nl/badjas-wit.jpg")).toBe(false);
   });
 });

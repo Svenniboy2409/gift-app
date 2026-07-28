@@ -20,8 +20,11 @@ describe("extractFromHtml", () => {
         <p>Voer de tekens hieronder in.</p>
       </body></html>`;
 
-    const product = extractFromHtml(botcheck, "https://www.amazon.nl/dp/B0BW1XDMQK");
-    expect(product.title).toBeNull();
+    // Er komt nu helemaal niets uit zo'n pagina — ook geen afbeelding of
+    // omschrijving, want die horen bij de controlepagina en niet bij het product.
+    expect(extractFromHtml(botcheck, "https://www.amazon.nl/dp/B0BW1XDMQK")).toEqual(
+      {},
+    );
   });
 
   it("laat een echte productpagina ongemoeid", () => {
@@ -69,8 +72,7 @@ Gratis bezorging`;
 
   it("weigert een titel die alleen de winkelnaam is", () => {
     const botcheck = "Title: Amazon.nl\n\nMarkdown Content:\nEven geduld";
-    const product = parseJinaMarkdown(botcheck, "https://www.amazon.nl/dp/X");
-    expect(product.title).toBeNull();
+    expect(parseJinaMarkdown(botcheck, "https://www.amazon.nl/dp/X")).toEqual({});
   });
 
   it("geeft lege velden bij een antwoord zonder titel", () => {
@@ -111,7 +113,7 @@ describe("parseMicrolink", () => {
       status: "success",
       data: { title: "bol.com" },
     });
-    expect(parseMicrolink(body, "https://www.bol.com/nl/nl/p/x/1/").title).toBeNull();
+    expect(parseMicrolink(body, "https://www.bol.com/nl/nl/p/x/1/")).toEqual({});
   });
 
   it("crasht niet op een fout of kapot antwoord", () => {
@@ -151,8 +153,7 @@ describe("parseReaderText", () => {
   it("weigert de foutpagina van een leesdienst", () => {
     // Precies wat r.jina.ai teruggaf toen bol.com hén blokkeerde.
     const tekst = "Title: IP address 34.96.49.86 is blocked\n\nMarkdown Content:\n";
-    const product = parseReaderText(tekst, "https://www.bol.com/nl/nl/p/x/123/");
-    expect(product.title).toBeNull();
+    expect(parseReaderText(tekst, "https://www.bol.com/nl/nl/p/x/123/")).toEqual({});
   });
 });
 
@@ -327,5 +328,59 @@ describe("gatherFrom", () => {
 
     expect(result.product.title).toBe("Toch iets");
     expect(result.sources).toEqual(["goed"]);
+  });
+});
+
+describe("foutpagina's van webshops", () => {
+  it("gooit de hele pagina weg, niet alleen de titel", () => {
+    // Dit is wat bol.com terugstuurt als een leesdienst wél binnenkomt maar
+    // de pagina niet mag zien: een foutpagina mét eigen og:image. Voorheen
+    // haalden we de titel eruit (goed) maar de "Oeps"-illustratie kwam er als
+    // productfoto doorheen.
+    const oepsPagina = `
+      <!doctype html><html><head>
+        <title>Oeps! Er ging iets mis - bol.com</title>
+        <meta property="og:image" content="https://s.s-bol.com/nl/static/oeps.png">
+        <meta property="og:description" content="Probeer het later opnieuw.">
+      </head><body></body></html>`;
+
+    const product = extractFromHtml(
+      oepsPagina,
+      "https://www.bol.com/nl/nl/p/lattafa-khamrah/9300000206096093/",
+    );
+    expect(product.title).toBeUndefined();
+    expect(product.imageUrl).toBeUndefined();
+    expect(product.description).toBeUndefined();
+  });
+
+  it("weigert een foutpagina ook via de tekstvorm", () => {
+    const tekst = "Title: Oeps! Er ging iets mis\n\nMarkdown Content:\n![x](https://s.s-bol.com/oeps.png)";
+    expect(parseReaderText(tekst, "https://www.bol.com/nl/nl/p/x/1/")).toEqual({});
+  });
+
+  it("weigert een foutpagina ook via Microlink", () => {
+    const body = JSON.stringify({
+      status: "success",
+      data: {
+        title: "Oeps! Er ging iets mis",
+        image: { url: "https://s.s-bol.com/nl/static/oeps.png" },
+      },
+    });
+    expect(parseMicrolink(body, "https://www.bol.com/nl/nl/p/x/1/")).toEqual({});
+  });
+
+  it("laat een echte productpagina met foto ongemoeid", () => {
+    const pagina = `
+      <!doctype html><html><head>
+        <title>Lattafa Khamrah EDP 100ml - bol.com</title>
+        <meta property="og:site_name" content="bol.com">
+        <meta property="og:image" content="https://media.s-bol.com/AbCd/550x496.jpg">
+        <meta property="product:price:amount" content="34.95">
+      </head><body></body></html>`;
+
+    const product = extractFromHtml(pagina, "https://www.bol.com/nl/nl/p/x/1/");
+    expect(product.title).toBe("Lattafa Khamrah EDP 100ml");
+    expect(product.imageUrl).toBe("https://media.s-bol.com/AbCd/550x496.jpg");
+    expect(product.priceCents).toBe(3495);
   });
 });
