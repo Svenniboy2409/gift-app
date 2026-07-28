@@ -3,7 +3,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ExtractedProduct } from "@/lib/scraper/extract";
 import { hintsFromUrl } from "@/lib/scraper/from-url";
-import { extractFromHtml, readViaFallbacks } from "@/lib/scraper/readers";
+import {
+  extractFromHtml,
+  gatherProductData,
+  isComplete,
+  mergeProduct,
+} from "@/lib/scraper/readers";
 import { FetchBlockedError, fetchHtml, fetchImage } from "@/lib/scraper/safe-fetch";
 import { storeImage } from "@/lib/storage";
 
@@ -133,29 +138,37 @@ export async function POST(request: Request) {
     reason = failure;
   }
 
-  // Stap 2: geen bruikbare naam? Dan via een gratis leesdienst. Dat gebeurt ook
-  // als de pagina wél binnenkwam: bol.com en Amazon serveren dan een
-  // controlepagina, waarvan de titel gewoon de winkelnaam is.
-  if (!product.title) {
-    const outcome = await readViaFallbacks(url);
-    if (outcome) {
-      product = { ...outcome.product };
-      // Uit het archief? Dan kan de prijs achterhaald zijn; dat moet de
-      // gebruiker even weten.
-      reason = outcome.source === "wayback" ? "archived" : undefined;
-    } else if (!reason) {
-      reason = "blocked";
+  // Stap 2: ontbreekt er nog iets, dan vullen de gratis leesdiensten de gaten
+  // aan — veld voor veld. Dat gebeurt ook als de pagina wél binnenkwam: soms
+  // levert die alleen een naam op, of serveert de winkel een controlepagina.
+  // Wat we al hebben blijft staan; alleen lege vakjes worden gevuld.
+  if (!isComplete(product)) {
+    const gathered = await gatherProductData(url, product);
+    product = gathered.product;
+
+    if (gathered.sources.includes("wayback")) {
+      // Uit het archief? Dan kan de prijs achterhaald zijn.
+      reason = "archived";
+    } else if (gathered.sources.length > 0) {
+      reason = undefined;
     }
   }
 
-  // Stap 3: nog steeds niets? Dan vult de link zelf het gat.
-  const title = product.title ?? hints.title;
+  // Stap 3: wat dan nog leeg is, vullen we met wat de link zelf prijsgeeft.
+  product = mergeProduct(product, {
+    title: hints.title,
+    imageUrl: hints.imageUrl,
+    merchant: hints.merchant,
+  });
+
+  const title = product.title ?? null;
 
   // Eigen kopie van de afbeelding, zodat hij blijft werken als de shop de
   // originele URL wijzigt of hotlinken blokkeert.
-  const storedImage =
-    (await storeRemoteImage(product.imageUrl ?? null, finalUrl)) ??
-    (await storeRemoteImage(hints.imageUrl, finalUrl));
+  const storedImage = await storeRemoteImage(
+    product.imageUrl ?? null,
+    finalUrl,
+  );
 
   const quality: ScrapeResponse["quality"] = !title
     ? "failed"

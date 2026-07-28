@@ -4,6 +4,9 @@ import {
   parseJinaMarkdown,
   parseMicrolink,
   parseReaderText,
+  gatherFrom,
+  isComplete,
+  mergeProduct,
   waybackSnapshotUrl,
 } from "@/lib/scraper/readers";
 
@@ -182,5 +185,147 @@ describe("waybackSnapshotUrl", () => {
   it("crasht niet op een kapot antwoord", () => {
     expect(waybackSnapshotUrl("geen json")).toBeNull();
     expect(waybackSnapshotUrl("{}")).toBeNull();
+  });
+});
+
+describe("mergeProduct", () => {
+  it("vult lege velden aan zonder bestaande te overschrijven", () => {
+    // Precies het geval waar het om gaat: een winkel geeft alleen een naam,
+    // het archief levert de prijs en de foto.
+    const vanDeWinkel = {
+      title: "Mattel Games Uno Liar",
+      priceCents: null,
+      imageUrl: null,
+    };
+    const uitHetArchief = {
+      title: "Uno Liar kaartspel (oude titel)",
+      priceCents: 1299,
+      imageUrl: "https://media.s-bol.com/uno.jpg",
+      description: "Kaartspel voor 2-6 spelers.",
+    };
+
+    const samen = mergeProduct(vanDeWinkel, uitHetArchief);
+    expect(samen.title).toBe("Mattel Games Uno Liar");
+    expect(samen.priceCents).toBe(1299);
+    expect(samen.imageUrl).toBe("https://media.s-bol.com/uno.jpg");
+    expect(samen.description).toBe("Kaartspel voor 2-6 spelers.");
+  });
+
+  it("behandelt een lege tekst als ontbrekend", () => {
+    expect(mergeProduct({ title: "" }, { title: "Echte naam" }).title).toBe(
+      "Echte naam",
+    );
+  });
+
+  it("laat een prijs van 0 staan", () => {
+    // 0 is een geldige prijs (gratis), geen ontbrekende waarde.
+    expect(mergeProduct({ priceCents: 0 }, { priceCents: 999 }).priceCents).toBe(0);
+  });
+
+  it("verandert niets als de tweede bron niets toevoegt", () => {
+    const basis = { title: "Sonos Era 100", priceCents: 24_900 };
+    expect(mergeProduct(basis, {})).toEqual(basis);
+  });
+});
+
+describe("isComplete", () => {
+  it("vraagt om naam, prijs én foto", () => {
+    expect(
+      isComplete({ title: "X", priceCents: 100, imageUrl: "https://a/b.jpg" }),
+    ).toBe(true);
+    expect(isComplete({ title: "X", priceCents: 100 })).toBe(false);
+    expect(isComplete({ title: "X", imageUrl: "https://a/b.jpg" })).toBe(false);
+    expect(isComplete({ priceCents: 100, imageUrl: "https://a/b.jpg" })).toBe(false);
+    expect(isComplete({})).toBe(false);
+  });
+
+  it("ziet een gratis product als compleet", () => {
+    expect(
+      isComplete({ title: "X", priceCents: 0, imageUrl: "https://a/b.jpg" }),
+    ).toBe(true);
+  });
+});
+
+describe("gatherFrom", () => {
+  /** Een nagebootste leesdienst die na `delay` ms iets teruggeeft. */
+  const reader = (
+    source: string,
+    product: Record<string, unknown> | null,
+    delay = 0,
+  ) =>
+    () =>
+      new Promise<{ product: Record<string, unknown>; source: string } | null>(
+        (resolve) =>
+          setTimeout(() => resolve(product ? { product, source } : null), delay),
+      );
+
+  it("plakt de vondsten van meerdere diensten aan elkaar", async () => {
+    // Dit is het geval waar het om draait: de winkel geeft alleen een naam,
+    // een andere bron de prijs, en weer een andere de foto.
+    const result = await gatherFrom(
+      [
+        reader("winkel", { title: "Uno Liar" }),
+        reader("dienst-b", { priceCents: 1299, currency: "EUR" }, 5),
+        reader("dienst-c", { imageUrl: "https://media.s-bol.com/uno.jpg" }, 10),
+      ],
+      "https://www.bol.com/nl/nl/p/uno-liar/123/",
+      {},
+    );
+
+    expect(result.product.title).toBe("Uno Liar");
+    expect(result.product.priceCents).toBe(1299);
+    expect(result.product.imageUrl).toBe("https://media.s-bol.com/uno.jpg");
+    expect(result.sources).toEqual(["winkel", "dienst-b", "dienst-c"]);
+  });
+
+  it("vult aan op wat er al was", async () => {
+    const result = await gatherFrom(
+      [reader("archief", { priceCents: 1299, imageUrl: "https://a/b.jpg" })],
+      "https://shop.nl/x",
+      { title: "Al bekend" },
+    );
+
+    expect(result.product.title).toBe("Al bekend");
+    expect(result.product.priceCents).toBe(1299);
+  });
+
+  it("noteert een dienst niet als hij niets nieuws toevoegt", async () => {
+    const result = await gatherFrom(
+      [reader("dubbelop", { title: "Al bekend" })],
+      "https://shop.nl/x",
+      { title: "Al bekend" },
+    );
+    expect(result.sources).toEqual([]);
+  });
+
+  it("stopt zodra alles binnen is en wacht niet op de trage dienst", async () => {
+    const begin = Date.now();
+    const result = await gatherFrom(
+      [
+        reader("snel", {
+          title: "X",
+          priceCents: 100,
+          imageUrl: "https://a/b.jpg",
+        }),
+        reader("traag", { description: "komt te laat" }, 3000),
+      ],
+      "https://shop.nl/x",
+      {},
+    );
+
+    expect(isComplete(result.product)).toBe(true);
+    expect(Date.now() - begin).toBeLessThan(1000);
+  });
+
+  it("overleeft diensten die stukgaan of niets vinden", async () => {
+    const kapot = () => Promise.reject(new Error("dienst plat"));
+    const result = await gatherFrom(
+      [kapot, reader("leeg", null), reader("goed", { title: "Toch iets" })],
+      "https://shop.nl/x",
+      {},
+    );
+
+    expect(result.product.title).toBe("Toch iets");
+    expect(result.sources).toEqual(["goed"]);
   });
 });

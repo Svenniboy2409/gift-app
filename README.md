@@ -247,15 +247,30 @@ vanaf hun eigen infrastructuur en geven ons de inhoud terug:
 | [microlink.io](https://microlink.io) | titel, omschrijving en afbeelding als JSON | gratis tot een bescheiden aantal per dag |
 | [Internet Archive](https://web.archive.org) | een eerdere momentopname van de pagina | gratis |
 
-Ze worden alleen aangeroepen als onze eigen poging niets bruikbaars oplevert.
-Dan gaan de eerste vier **tegelijk** op pad en wint wie het eerst iets
-bruikbaars teruggeeft. Dat is bewust: welke dienst een winkel doorlaat verschilt
-per geval, en na elkaar proberen betekent dat de traagste bepaalt hoe lang je
-wacht. De grens ligt op 22 seconden.
+**Ze vullen elkaar aan, veld voor veld.** Dat is het belangrijkste principe
+hier: geeft de ene bron alleen een naam en de andere alleen een prijs, dan
+gebruiken we ze allebei. Wat we al hebben blijft staan — eerdere bronnen zijn
+betrouwbaarder dan latere — en alleen lege vakjes worden gevuld. Zodra naam,
+prijs én foto binnen zijn stoppen we.
 
-Het archief zit in een tweede ronde, en alleen als geen van de live diensten
-iets oplevert. Een momentopname is per definitie ouder: naam en foto kloppen
-nog, maar de prijs kan achterhaald zijn. De app zegt dat er dan ook bij.
+De eerste vier gaan **tegelijk** op pad, want welke dienst een winkel doorlaat
+verschilt per geval en na elkaar proberen betekent dat de traagste bepaalt hoe
+lang je wacht. De grens voor die ronde ligt op 18 seconden.
+
+Het archief komt daarna, en alleen als er dán nog iets ontbreekt. Ook als de
+live diensten al een naam vonden: een oude foto is nog steeds de juiste foto, en
+een oude prijs is bruikbaarder dan een leeg vakje. Wordt het archief gebruikt,
+dan meldt de app dat en vraagt hij je de prijs te controleren.
+
+De hele keten:
+
+```
+1. zelf ophalen                          → werkt bij de meeste webshops
+2. titel rommel? → telt als niets gevonden
+3. jina / allorigins / codetabs / microlink, tegelijk, gaten vullen
+4. het archief, voor wat dan nog leeg is
+5. de link zelf, voor de laatste gaten   → naam uit het pad, foto via de ASIN
+```
 
 Ook hun eigen foutpagina's worden als rommel herkend — r.jina.ai antwoordt
 bijvoorbeeld met de titel "IP address 34.96.49.86 is blocked" als een winkel
@@ -264,7 +279,7 @@ hén weert. Zonder die controle belandt dat als productnaam in je lijst.
 Uit te zetten met `SCRAPER_READERS=off`; er gaan alleen openbare productlinks
 naartoe.
 
-**2. De link zelf** (`lib/scraper/from-url.ts`), als ook dat niets oplevert:
+**2. De link zelf** (`lib/scraper/from-url.ts`), voor wat dan nog leeg is:
 
 - de productnaam staat meestal letterlijk in het pad —
   `…/p/lego-classic-creatieve-superset-11036/…` wordt "Lego classic creatieve
@@ -277,15 +292,6 @@ naartoe.
 Wat er ook misgaat, je krijgt altijd een formulier met zoveel mogelijk
 ingevuld, en de app zegt erbij wat er nog ontbreekt. Toevoegen mislukt dus nooit
 helemaal.
-
-De volgorde in het kort:
-
-```
-1. zelf ophalen              → werkt bij de meeste webshops
-2. titel rommel?             → dan telt het als "niets gevonden"
-3. r.jina.ai / microlink.io  → gratis, haalt de pagina alsnog op
-4. de link zelf              → productnaam uit het pad, foto via de ASIN
-```
 
 Blijft ook dat te vaak misgaan, dan is een betaalde scraping-dienst
 (ScrapingBee, Scrapfly, Zyte) de enige route die structureel werkt: die draaien

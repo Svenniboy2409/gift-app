@@ -11,9 +11,12 @@ import { fetchHtml } from "@/lib/scraper/safe-fetch";
  *
  * bol.com en Amazon weigeren verzoeken vanaf datacenters, en daar draait deze
  * app op. Deze diensten halen de pagina wél op en geven ons de inhoud terug.
- * Allebei gratis en zonder sleutel; ze hebben wel een limiet per uur/dag, dus
- * we proberen ze pas als onze eigen poging niets bruikbaars oplevert, en we
- * stoppen zodra er één werkt.
+ * Allemaal gratis en zonder sleutel.
+ *
+ * Ze vullen elkaar aan in plaats van elkaar te vervangen: elke dienst levert
+ * vaak nét iets anders, en wat de één mist kan de ander wel hebben. We
+ * verzamelen dus alles wat binnenkomt en houden per veld de eerste bruikbare
+ * waarde. Zodra naam, prijs én foto binnen zijn stoppen we.
  *
  * Uit te zetten met SCRAPER_READERS=off, mocht je liever niets naar derden
  * sturen. Het gaat om openbare productlinks, verder niets.
@@ -25,14 +28,32 @@ export type ReaderOutcome = {
 };
 
 /**
- * Ruim genomen: deze diensten halen een hele pagina op en voeren soms ook nog
- * JavaScript uit, en dat kost tijd. Omdat ze naast elkaar draaien wachten we
- * nooit langer dan dit in totaal.
+ * Deze diensten halen een hele pagina op en voeren soms ook nog JavaScript uit,
+ * en dat kost tijd. Ze draaien naast elkaar, dus dit is de grens voor de hele
+ * live-ronde — niet per dienst opgeteld.
  */
-const READER_TIMEOUT_MS = 22_000;
+const READER_TIMEOUT_MS = 18_000;
+
+/**
+ * Het archief doet twee verzoeken achter elkaar (eerst kijken of er een kopie
+ * is, dan die kopie ophalen), dus daar telt de tijd wél op. Samen met de
+ * live-ronde blijft het geheel ruim onder de maxDuration van de route.
+ */
+const WAYBACK_TIMEOUT_MS = 10_000;
 
 function readersEnabled() {
   return process.env.SCRAPER_READERS !== "off";
+}
+
+/**
+ * Heeft deze dienst iets opgeleverd waar we wat aan hebben? Let op: een dienst
+ * die alleen een prijs of een foto vindt telt óók mee. Ze vullen elkaar aan,
+ * dus een halve vondst is geen mislukking.
+ */
+function hasAnything(product: Partial<ExtractedProduct>) {
+  return Boolean(
+    product.title || product.imageUrl || product.priceCents != null,
+  );
 }
 
 /**
@@ -54,7 +75,7 @@ async function readViaJina(url: string): Promise<ReaderOutcome | null> {
   if (!page.html) return null;
 
   const product = parseReaderText(page.html, url);
-  return product.title ? { product, source: "jina" } : null;
+  return hasAnything(product) ? { product, source: "jina" } : null;
 }
 
 /**
@@ -72,7 +93,7 @@ async function readViaAllOrigins(url: string): Promise<ReaderOutcome | null> {
   if (!page.html) return null;
 
   const product = parseReaderText(page.html, url);
-  return product.title ? { product, source: "allorigins" } : null;
+  return hasAnything(product) ? { product, source: "allorigins" } : null;
 }
 
 /**
@@ -89,7 +110,7 @@ async function readViaCodeTabs(url: string): Promise<ReaderOutcome | null> {
   if (!page.html) return null;
 
   const product = parseReaderText(page.html, url);
-  return product.title ? { product, source: "codetabs" } : null;
+  return hasAnything(product) ? { product, source: "codetabs" } : null;
 }
 
 /**
@@ -103,7 +124,7 @@ async function readViaWayback(url: string): Promise<ReaderOutcome | null> {
     `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`,
     {
       allowText: true,
-      timeoutMs: READER_TIMEOUT_MS,
+      timeoutMs: WAYBACK_TIMEOUT_MS,
       headers: { Accept: "application/json" },
     },
   );
@@ -114,12 +135,12 @@ async function readViaWayback(url: string): Promise<ReaderOutcome | null> {
 
   const page = await fetchHtml(raw, {
     allowText: true,
-    timeoutMs: READER_TIMEOUT_MS,
+    timeoutMs: WAYBACK_TIMEOUT_MS,
   });
   if (!page.html) return null;
 
   const product = parseReaderText(page.html, url);
-  return product.title ? { product, source: "wayback" } : null;
+  return hasAnything(product) ? { product, source: "wayback" } : null;
 }
 
 /**
@@ -136,7 +157,7 @@ async function readViaMicrolink(url: string): Promise<ReaderOutcome | null> {
   if (!page.html) return null;
 
   const product = parseMicrolink(page.html, url);
-  return product.title ? { product, source: "microlink" } : null;
+  return hasAnything(product) ? { product, source: "microlink" } : null;
 }
 
 /* --- Parsers, los van het netwerk zodat ze te testen zijn ---------------- */
@@ -177,12 +198,12 @@ export function parseReaderText(
     body.slice(0, 4000),
   );
 
-  if (looksLikeHtml) {
-    const product = extractFromHtml(body, pageUrl);
-    if (product.title) return product;
-  }
+  if (!looksLikeHtml) return parseJinaMarkdown(body, pageUrl);
 
-  return parseJinaMarkdown(body, pageUrl);
+  // Ook bij HTML nog even door de tekstvorm halen: soms staat de prijs wel in
+  // de zichtbare tekst maar niet in de metadata.
+  const fromHtml = extractFromHtml(body, pageUrl);
+  return mergeProduct(fromHtml, parseJinaMarkdown(body, pageUrl));
 }
 
 /**
@@ -271,66 +292,131 @@ function safeHostname(url: string) {
   }
 }
 
-/**
- * Bevraagt alle leesdiensten tegelijk en geeft de eerste terug die een
- * bruikbare productnaam oplevert.
- *
- * Naast elkaar in plaats van na elkaar, want anders bepaalt de traagste dienst
- * hoe lang je zit te wachten — en welke winkel welke dienst doorlaat, verschilt
- * per geval. Een dienst die faalt of niets bruikbaars vindt telt gewoon niet
- * mee; ze mogen de app nooit laten klappen.
- */
-export async function readViaFallbacks(
-  url: string,
-): Promise<ReaderOutcome | null> {
-  if (!readersEnabled()) return null;
-
-  // Eerst de diensten die de winkel nú bekijken. Pas als die allemaal geweerd
-  // worden, vallen we terug op het archief — dat levert per definitie oudere
-  // gegevens, dus daar willen we niet te snel bij uitkomen.
-  const live = await raceForResult([
-    readViaJina,
-    readViaAllOrigins,
-    readViaCodeTabs,
-    readViaMicrolink,
-  ], url);
-  if (live) return live;
-
-  return raceForResult([readViaWayback], url);
-}
-
-type Reader = (url: string) => Promise<ReaderOutcome | null>;
-
-/** Start alle diensten tegelijk en geeft de eerste bruikbare uitkomst terug. */
-function raceForResult(readers: Reader[], url: string) {
-  return new Promise<ReaderOutcome | null>((resolve) => {
-    let pending = readers.length;
-    let settled = false;
-
-    const finish = (outcome: ReaderOutcome | null) => {
-      if (settled) return;
-      if (outcome) {
-        settled = true;
-        resolve(outcome);
-        return;
-      }
-      pending -= 1;
-      if (pending === 0) {
-        settled = true;
-        resolve(null);
-      }
-    };
-
-    for (const reader of readers) {
-      reader(url)
-        .then(finish)
-        .catch(() => finish(null));
-    }
-  });
-}
 
 /** Leest een pagina die we via een dienst binnenkregen als gewone HTML. */
 export function extractFromHtml(html: string, pageUrl: string) {
   const product = extractProduct(html, pageUrl);
   return { ...product, title: cleanTitle(product.title, safeHostname(pageUrl)) };
+}
+
+/* --- De keten: per veld aanvullen ---------------------------------------- */
+
+type Reader = (url: string) => Promise<ReaderOutcome | null>;
+
+const LIVE_READERS: Reader[] = [
+  readViaJina,
+  readViaAllOrigins,
+  readViaCodeTabs,
+  readViaMicrolink,
+];
+
+/** De velden waar het om draait. Ontbreekt er één, dan zoeken we door. */
+export function isComplete(product: Partial<ExtractedProduct>) {
+  return Boolean(product.title && product.imageUrl) && product.priceCents != null;
+}
+
+function has(value: unknown) {
+  return value !== null && value !== undefined && value !== "";
+}
+
+/**
+ * Vult ontbrekende velden aan uit een tweede bron. Wat we al hadden blijft
+ * staan: eerdere bronnen zijn betrouwbaarder dan latere.
+ */
+export function mergeProduct(
+  base: Partial<ExtractedProduct>,
+  extra: Partial<ExtractedProduct>,
+): Partial<ExtractedProduct> {
+  const merged: Partial<ExtractedProduct> = { ...base };
+  for (const key of [
+    "title",
+    "description",
+    "priceCents",
+    "currency",
+    "imageUrl",
+    "merchant",
+  ] as const) {
+    if (!has(merged[key]) && has(extra[key])) {
+      // @ts-expect-error — sleutel en waarde horen per definitie bij elkaar.
+      merged[key] = extra[key];
+    }
+  }
+  return merged;
+}
+
+export type GatherResult = {
+  product: Partial<ExtractedProduct>;
+  /** Welke diensten iets hebben bijgedragen. */
+  sources: string[];
+};
+
+/**
+ * Laat een groep diensten tegelijk los op dezelfde link en voegt alles wat
+ * binnenkomt samen. Zodra alle velden gevuld zijn stoppen we; anders wachten we
+ * tot iedereen klaar is, zodat één trage dienst niet betekent dat we een veld
+ * missen dat hij wél had kunnen leveren.
+ */
+export function gatherFrom(
+  readers: Reader[],
+  url: string,
+  base: Partial<ExtractedProduct>,
+): Promise<GatherResult> {
+  return new Promise((resolve) => {
+    let merged = base;
+    const sources: string[] = [];
+    let pending = readers.length;
+    let settled = false;
+
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      resolve({ product: merged, sources });
+    };
+
+    const step = (outcome: ReaderOutcome | null) => {
+      if (settled) return;
+      if (outcome) {
+        const before = merged;
+        merged = mergeProduct(merged, outcome.product);
+        // Alleen noteren als deze dienst daadwerkelijk iets toevoegde.
+        if (JSON.stringify(before) !== JSON.stringify(merged)) {
+          sources.push(outcome.source);
+        }
+      }
+      pending -= 1;
+      if (isComplete(merged) || pending === 0) done();
+    };
+
+    for (const reader of readers) {
+      reader(url)
+        .then(step)
+        .catch(() => step(null));
+    }
+  });
+}
+
+/**
+ * Vult de ontbrekende velden aan via de gratis leesdiensten.
+ *
+ * Eerst de diensten die de winkel nú bekijken; hun gegevens zijn actueel. Is
+ * daarna nog iets leeg, dan mag het archief de rest invullen — ook als de live
+ * diensten al een naam vonden. Een oude foto is namelijk nog steeds de juiste
+ * foto, en een oude prijs is beter dan een leeg vakje dat je zelf moet opzoeken.
+ */
+export async function gatherProductData(
+  url: string,
+  base: Partial<ExtractedProduct> = {},
+): Promise<GatherResult> {
+  if (!readersEnabled() || isComplete(base)) {
+    return { product: base, sources: [] };
+  }
+
+  const live = await gatherFrom(LIVE_READERS, url, base);
+  if (isComplete(live.product)) return live;
+
+  const withArchive = await gatherFrom([readViaWayback], url, live.product);
+  return {
+    product: withArchive.product,
+    sources: [...live.sources, ...withArchive.sources],
+  };
 }
