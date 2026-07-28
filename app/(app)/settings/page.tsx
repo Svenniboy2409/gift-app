@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { getTranslator } from "@/lib/i18n/server";
+import { BookmarkletCard } from "@/components/bookmarklet-card";
 import { PasswordForm, ProfileForm } from "@/components/settings-forms";
 
 export default async function SettingsPage() {
@@ -20,6 +21,8 @@ export default async function SettingsPage() {
           locale={user.locale}
         />
       </section>
+
+      <BookmarkletCard />
 
       <section className="card p-6">
         <h2 className="mb-4 font-semibold text-ink">{t("settings.password")}</h2>

@@ -52,7 +52,16 @@ export async function registerAction(
   });
 
   await createSession(user.id);
-  redirect("/dashboard");
+  redirect(safeNext(formData.get("next")));
+}
+
+/**
+ * Waar we na het inloggen heen gaan. Alleen paden binnen de app zelf, nooit een
+ * volledig adres — anders is dit een open doorstuurgat naar een andere site.
+ */
+function safeNext(value: FormDataEntryValue | null) {
+  const next = typeof value === "string" ? value : "";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 }
 
 export async function loginAction(
@@ -79,7 +88,7 @@ export async function loginAction(
 
   await createSession(user.id);
   await setLocaleCookie(user.locale === "en" ? "en" : "nl");
-  redirect("/dashboard");
+  redirect(safeNext(formData.get("next")));
 }
 
 export async function logoutAction() {

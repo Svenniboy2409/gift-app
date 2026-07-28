@@ -293,6 +293,24 @@ Wat er ook misgaat, je krijgt altijd een formulier met zoveel mogelijk
 ingevuld, en de app zegt erbij wat er nog ontbreekt. Toevoegen mislukt dus nooit
 helemaal.
 
+### De bewaarknop: de winkel omzeilen door het niet te proberen
+
+Voor winkels die hardnekkig blijven weigeren is er een uitweg die principieel
+niet te blokkeren is: de pagina helemaal niet ophalen, maar uitlezen in de
+browser van de gebruiker zelf — op de productpagina die hij toch al bekijkt.
+Voor de winkel is dat een gewone bezoeker.
+
+Onder **Instellingen** staat een bladwijzer die je één keer installeert
+(`lib/bookmarklet.ts`). Sta je later op een product, dan tik je erop; de
+bladwijzer leest naam, prijs en foto uit de pagina — dezelfde volgorde als op de
+server: JSON-LD, dan OpenGraph, dan de zichtbare tekst — en opent `/add` met
+alles ingevuld. Daar kies je alleen nog de lijst.
+
+Waarom dit via een bladwijzer moet en niet gewoon vanuit de app: een webpagina
+mag de inhoud van een andere website niet lezen (CORS). Een bladwijzer draait
+ín de pagina zelf en heeft die beperking niet. De gegevens gaan als
+querystring mee naar `/add`, dus er is geen CORS en geen aparte inlog nodig.
+
 Blijft ook dat te vaak misgaan, dan is een betaalde scraping-dienst
 (ScrapingBee, Scrapfly, Zyte) de enige route die structureel werkt: die draaien
 vanaf woonhuis-IP's. Dat is een bewuste keuze met een prijskaartje, dus die zit
@@ -324,10 +342,14 @@ koper nergens in de HTML van de eigenaar voorkomen.
 ## Tests
 
 ```bash
-npm test          # unit tests (prijzen, extractie, SSRF-blokkade)
+npm test          # unit tests (prijzen, extractie, rommelfilter, SSRF-blokkade)
 npm run typecheck # TypeScript
-npm run test:e2e  # Playwright: registreren → lijst → claimen → verrassing
+npm run test:e2e  # Playwright: de volledige doorloop plus de bewaarknop
 ```
+
+De bewaarknop wordt echt uitgevoerd in de e2e-test: er wordt een nagemaakte
+webshoppagina geserveerd, de bookmarklet-code draait daarop, en we controleren
+welke gegevens er in het formulier belanden.
 
 Het `build`-script draait via `scripts/migrate.mjs` ook de migraties, zodat de
 tabellen op Vercel vanzelf goed komen te staan. Is er geen `DATABASE_URL`, dan

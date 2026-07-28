@@ -13,22 +13,29 @@ function createClient(): Client {
 
 const globalForPrisma = globalThis as unknown as { prisma?: Client };
 
+let client: Client | undefined;
+
 /**
  * De client wordt pas bij het eerste gebruik gemaakt, niet bij het inladen van
  * deze module. Dat is nodig omdat Next.js tijdens het bouwen alle modules
  * evalueert: zonder DATABASE_URL zou de build anders stuklopen, terwijl je die
  * variabele op Vercel pas ná de eerste deploy kunt zetten.
  *
- * In development bewaren we de client op globalThis, zodat hot reload niet bij
- * elke wijziging een nieuwe verbindingspool opent.
+ * Eenmaal gemaakt hergebruiken we hem — één verbindingspool per proces. Dat is
+ * geen detail: de proxy hieronder roept dit aan bij élke eigenschapstoegang,
+ * dus zonder deze cache opent iedere query een nieuwe pool die nooit meer
+ * dichtgaat, en loopt de database binnen de kortste keren vol.
+ *
+ * In development hangt hij aan globalThis, zodat hot reload niet bij elke
+ * wijziging opnieuw begint.
  */
 function getClient(): Client {
-  if (!globalForPrisma.prisma) {
-    const client = createClient();
-    if (process.env.NODE_ENV === "production") return client;
-    globalForPrisma.prisma = client;
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma ??= createClient();
+    return globalForPrisma.prisma;
   }
-  return globalForPrisma.prisma;
+  client ??= createClient();
+  return client;
 }
 
 export const prisma = new Proxy({} as Client, {

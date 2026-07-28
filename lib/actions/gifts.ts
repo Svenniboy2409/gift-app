@@ -56,6 +56,33 @@ export async function createGiftAction(
   return { success: "saved" };
 }
 
+/**
+ * Zelfde als createGiftAction, maar met de lijst als veld in het formulier in
+ * plaats van vooraf vastgezet. Voor de bewaarknop, waar je de lijst pas kiest
+ * op het moment dat je het cadeau opslaat.
+ */
+export async function createGiftInListAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const listId = String(formData.get("listId") ?? "");
+  if (!listId) return { error: "required" };
+
+  const parsed = readGiftForm(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "invalid" };
+  }
+
+  // createGift controleert zelf of de lijst van deze gebruiker is.
+  const gift = await createGift(user.id, listId, toGiftInput(parsed.data));
+  if (!gift) return { error: "generic" };
+
+  revalidatePath(`/lists/${listId}`);
+  revalidatePath("/dashboard");
+  return { success: "saved" };
+}
+
 export async function updateGiftAction(
   listId: string,
   giftId: string,

@@ -61,12 +61,17 @@ export function GiftEditor({
   onDone,
   onCancel,
   notice,
+  children,
+  cancelLabel,
 }: {
   draft: GiftDraft;
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   onDone: () => void;
   onCancel: () => void;
   notice?: string | null;
+  /** Extra velden bovenaan het formulier, zoals de lijstkeuze. */
+  children?: React.ReactNode;
+  cancelLabel?: string;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
@@ -120,6 +125,8 @@ export function GiftEditor({
           {notice}
         </p>
       )}
+
+      {children}
 
       <div className="flex flex-col gap-4 sm:flex-row">
         <div className="sm:w-40 sm:shrink-0">
@@ -323,7 +330,7 @@ export function GiftEditor({
       <div className="flex flex-wrap gap-3">
         <SubmitButton />
         <button type="button" className="btn btn-ghost" onClick={onCancel}>
-          {t("gift.cancel")}
+          {cancelLabel ?? t("gift.cancel")}
         </button>
       </div>
     </form>

@@ -20,9 +20,12 @@ function SubmitButton({ label }: { label: string }) {
 export function AuthForm({
   mode,
   action,
+  next,
 }: {
   mode: "login" | "register";
   action: (state: FormState, formData: FormData) => Promise<FormState>;
+  /** Waar we na het inloggen heen gaan, bijv. terug naar de bewaarknop. */
+  next?: string;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
@@ -38,6 +41,7 @@ export function AuthForm({
       </p>
 
       <form action={formAction} className="mt-6 space-y-4">
+        {next && <input type="hidden" name="next" value={next} />}
         {isRegister && (
           <div>
             <label className="label" htmlFor="name">
@@ -100,7 +104,10 @@ export function AuthForm({
       <p className="mt-5 text-center text-sm text-muted">
         {t(isRegister ? "auth.hasAccount" : "auth.noAccount")}{" "}
         <Link
-          href={isRegister ? "/login" : "/register"}
+          href={
+            (isRegister ? "/login" : "/register") +
+            (next ? `?next=${encodeURIComponent(next)}` : "")
+          }
           className="font-semibold text-accent hover:underline"
         >
           {t(isRegister ? "auth.loginSubmit" : "auth.registerSubmit")}
