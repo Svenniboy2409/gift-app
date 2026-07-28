@@ -140,7 +140,9 @@ export async function POST(request: Request) {
     const outcome = await readViaFallbacks(url);
     if (outcome) {
       product = { ...outcome.product };
-      reason = undefined;
+      // Uit het archief? Dan kan de prijs achterhaald zijn; dat moet de
+      // gebruiker even weten.
+      reason = outcome.source === "wayback" ? "archived" : undefined;
     } else if (!reason) {
       reason = "blocked";
     }

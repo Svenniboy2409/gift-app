@@ -131,6 +131,7 @@
   "scrape.partial": "Niet alles is gelukt — controleer de gegevens even.",
   "scrape.blocked": "Deze webshop blokkeert automatische uitlezing. Vul het zelf in.",
   "scrape.blockedPartial": "{shop} laat ons de pagina niet lezen. We hebben ingevuld wat uit de link te halen was — controleer de naam en vul de prijs even zelf in.",
+  "scrape.archived": "Deze winkel laat ons niet binnen, dus we hebben een archiefkopie van de pagina gebruikt. Naam en foto kloppen; controleer de prijs even, die kan verouderd zijn.",
   "scrape.thisShop": "Deze webshop",
   "scrape.invalidUrl": "Plak een volledige link, bijvoorbeeld https://www.bol.com/…",
   "visitor.byLine": "Verlanglijstje van {name}",

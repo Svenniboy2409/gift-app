@@ -314,13 +314,15 @@ export function GiftManager({
     const notice =
       result.quality === "failed"
         ? t(blocked ? "scrape.blocked" : "scrape.failed")
-        : blocked
-          ? t("scrape.blockedPartial", {
-              shop: product.merchant ?? t("scrape.thisShop"),
-            })
-          : result.quality === "partial"
-            ? t("scrape.partial")
-            : null;
+        : result.reason === "archived"
+          ? t("scrape.archived")
+          : blocked
+            ? t("scrape.blockedPartial", {
+                shop: product.merchant ?? t("scrape.thisShop"),
+              })
+            : result.quality === "partial"
+              ? t("scrape.partial")
+              : null;
 
     setEditing({
       mode: "new",

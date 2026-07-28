@@ -76,6 +76,53 @@ async function readViaAllOrigins(url: string): Promise<ReaderOutcome | null> {
 }
 
 /**
+ * CodeTabs — nog een gratis doorgeefluik, op weer andere infrastructuur.
+ * Geen sleutel nodig.
+ */
+async function readViaCodeTabs(url: string): Promise<ReaderOutcome | null> {
+  const endpoint = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+  const page = await fetchHtml(endpoint, {
+    allowText: true,
+    timeoutMs: READER_TIMEOUT_MS,
+    headers: { Accept: "text/html, */*;q=0.8" },
+  });
+  if (!page.html) return null;
+
+  const product = parseReaderText(page.html, url);
+  return product.title ? { product, source: "codetabs" } : null;
+}
+
+/**
+ * Het Internet Archive. Een archiefkopie is per definitie ouder, dus de prijs
+ * kan achterhaald zijn — maar naam en foto kloppen, en het archief weert
+ * datacenters niet. Voor winkels die álle doorgeefluiken blokkeren is dit vaak
+ * de enige die nog iets oplevert.
+ */
+async function readViaWayback(url: string): Promise<ReaderOutcome | null> {
+  const lookup = await fetchHtml(
+    `https://archive.org/wayback/available?url=${encodeURIComponent(url)}`,
+    {
+      allowText: true,
+      timeoutMs: READER_TIMEOUT_MS,
+      headers: { Accept: "application/json" },
+    },
+  );
+  if (!lookup.html) return null;
+
+  const raw = waybackSnapshotUrl(lookup.html);
+  if (!raw) return null;
+
+  const page = await fetchHtml(raw, {
+    allowText: true,
+    timeoutMs: READER_TIMEOUT_MS,
+  });
+  if (!page.html) return null;
+
+  const product = parseReaderText(page.html, url);
+  return product.title ? { product, source: "wayback" } : null;
+}
+
+/**
  * Microlink — geeft de metadata van een pagina terug als JSON. Gratis tot een
  * bescheiden aantal verzoeken per dag, zonder sleutel.
  */
@@ -93,6 +140,30 @@ async function readViaMicrolink(url: string): Promise<ReaderOutcome | null> {
 }
 
 /* --- Parsers, los van het netwerk zodat ze te testen zijn ---------------- */
+
+/**
+ * Het antwoord van de beschikbaarheidscheck van het archief → de URL van de
+ * onbewerkte momentopname, of null als er geen kopie is.
+ */
+export function waybackSnapshotUrl(body: string): string | null {
+  let payload: {
+    archived_snapshots?: { closest?: { available?: boolean; url?: string } };
+  };
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return null;
+  }
+
+  const closest = payload.archived_snapshots?.closest;
+  if (!closest?.available || !closest.url) return null;
+
+  // Met "id_" achter het tijdstempel krijgen we de pagina zoals hij was, zonder
+  // de navigatiebalk die het archief er normaal omheen zet.
+  return closest.url
+    .replace(/^http:/, "https:")
+    .replace(/\/web\/(\d+)\//, "/web/$1id_/");
+}
 
 /**
  * Een leesdienst geeft ons HTML of platte tekst terug. HTML kunnen we door de
@@ -214,8 +285,24 @@ export async function readViaFallbacks(
 ): Promise<ReaderOutcome | null> {
   if (!readersEnabled()) return null;
 
-  const readers = [readViaJina, readViaAllOrigins, readViaMicrolink];
+  // Eerst de diensten die de winkel nú bekijken. Pas als die allemaal geweerd
+  // worden, vallen we terug op het archief — dat levert per definitie oudere
+  // gegevens, dus daar willen we niet te snel bij uitkomen.
+  const live = await raceForResult([
+    readViaJina,
+    readViaAllOrigins,
+    readViaCodeTabs,
+    readViaMicrolink,
+  ], url);
+  if (live) return live;
 
+  return raceForResult([readViaWayback], url);
+}
+
+type Reader = (url: string) => Promise<ReaderOutcome | null>;
+
+/** Start alle diensten tegelijk en geeft de eerste bruikbare uitkomst terug. */
+function raceForResult(readers: Reader[], url: string) {
   return new Promise<ReaderOutcome | null>((resolve) => {
     let pending = readers.length;
     let settled = false;

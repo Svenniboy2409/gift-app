@@ -131,6 +131,7 @@
   "scrape.partial": "We couldn't get everything — please double-check.",
   "scrape.blocked": "This shop blocks automatic reading. Please fill it in yourself.",
   "scrape.blockedPartial": "{shop} won't let us read the page. We filled in what the link revealed — check the name and add the price yourself.",
+  "scrape.archived": "This shop won't let us in, so we used an archived copy of the page. The name and photo are right; please double-check the price, it may be out of date.",
   "scrape.thisShop": "This shop",
   "scrape.invalidUrl": "Paste a complete link, for example https://www.bol.com/…",
   "visitor.byLine": "{name}'s wishlist",

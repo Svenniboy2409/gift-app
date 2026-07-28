@@ -243,13 +243,19 @@ vanaf hun eigen infrastructuur en geven ons de inhoud terug:
 | --- | --- | --- |
 | [r.jina.ai](https://jina.ai/reader/) | de pagina, inclusief wat JavaScript oplevert | gratis, geen sleutel nodig |
 | [allorigins.win](https://allorigins.win) | de pagina onbewerkt | gratis, geen sleutel nodig |
+| [codetabs.com](https://codetabs.com) | de pagina onbewerkt, andere infrastructuur | gratis, geen sleutel nodig |
 | [microlink.io](https://microlink.io) | titel, omschrijving en afbeelding als JSON | gratis tot een bescheiden aantal per dag |
+| [Internet Archive](https://web.archive.org) | een eerdere momentopname van de pagina | gratis |
 
 Ze worden alleen aangeroepen als onze eigen poging niets bruikbaars oplevert.
-Dan gaan ze **alle drie tegelijk** op pad en wint de eerste die iets bruikbaars
-teruggeeft. Dat is bewust: welke dienst een winkel doorlaat verschilt per geval,
-en na elkaar proberen betekent dat de traagste bepaalt hoe lang je wacht. De
-grens ligt op 22 seconden.
+Dan gaan de eerste vier **tegelijk** op pad en wint wie het eerst iets
+bruikbaars teruggeeft. Dat is bewust: welke dienst een winkel doorlaat verschilt
+per geval, en na elkaar proberen betekent dat de traagste bepaalt hoe lang je
+wacht. De grens ligt op 22 seconden.
+
+Het archief zit in een tweede ronde, en alleen als geen van de live diensten
+iets oplevert. Een momentopname is per definitie ouder: naam en foto kloppen
+nog, maar de prijs kan achterhaald zijn. De app zegt dat er dan ook bij.
 
 Ook hun eigen foutpagina's worden als rommel herkend — r.jina.ai antwoordt
 bijvoorbeeld met de titel "IP address 34.96.49.86 is blocked" als een winkel

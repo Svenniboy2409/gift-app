@@ -4,6 +4,7 @@ import {
   parseJinaMarkdown,
   parseMicrolink,
   parseReaderText,
+  waybackSnapshotUrl,
 } from "@/lib/scraper/readers";
 
 describe("extractFromHtml", () => {
@@ -149,5 +150,37 @@ describe("parseReaderText", () => {
     const tekst = "Title: IP address 34.96.49.86 is blocked\n\nMarkdown Content:\n";
     const product = parseReaderText(tekst, "https://www.bol.com/nl/nl/p/x/123/");
     expect(product.title).toBeNull();
+  });
+});
+
+describe("waybackSnapshotUrl", () => {
+  it("maakt van een momentopname een onbewerkte URL", () => {
+    const body = JSON.stringify({
+      archived_snapshots: {
+        closest: {
+          available: true,
+          url: "http://web.archive.org/web/20250412093000/https://www.bol.com/nl/nl/p/x/123/",
+        },
+      },
+    });
+    // "id_" haalt de navigatiebalk van het archief weg, https voorkomt een
+    // onnodige omleiding.
+    expect(waybackSnapshotUrl(body)).toBe(
+      "https://web.archive.org/web/20250412093000id_/https://www.bol.com/nl/nl/p/x/123/",
+    );
+  });
+
+  it("geeft null als er geen kopie is", () => {
+    expect(waybackSnapshotUrl(JSON.stringify({ archived_snapshots: {} }))).toBeNull();
+    expect(
+      waybackSnapshotUrl(
+        JSON.stringify({ archived_snapshots: { closest: { available: false } } }),
+      ),
+    ).toBeNull();
+  });
+
+  it("crasht niet op een kapot antwoord", () => {
+    expect(waybackSnapshotUrl("geen json")).toBeNull();
+    expect(waybackSnapshotUrl("{}")).toBeNull();
   });
 });
