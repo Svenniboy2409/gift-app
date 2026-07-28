@@ -228,3 +228,101 @@ test("kiest de eerste foto uit de reeks van het product", async ({
     "https://media.example.com/EERSTE.jpg",
   );
 });
+
+/**
+ * Precies de opzet van de bol.com-pagina van EA SPORTS FC 27: een galerij waar
+ * een video tussen de productfoto's staat. De hoofdfoto is de cover; die moet
+ * er hoe dan ook uitkomen, ook al noemt de JSON-LD de videoposter eerder.
+ */
+const SHOP_WITH_VIDEO = `<!doctype html>
+<html><head>
+  <title>EA SPORTS FC 27 - PS5</title>
+  <meta property="og:image" content="https://media.example.com/fc27-cover.jpg">
+  <script type="application/ld+json">
+  {"@type":"Product","name":"EA SPORTS FC 27 - PS5",
+   "image":["https://media.example.com/fc27-video-poster.jpg",
+            "https://media.example.com/fc27-cover.jpg",
+            "https://media.example.com/fc27-screenshot.jpg"],
+   "offers":{"@type":"Offer","price":"79.99","priceCurrency":"EUR"}}
+  </script>
+</head><body><h1>EA SPORTS FC 27</h1></body></html>`;
+
+async function runBookmarklet(page: import("@playwright/test").Page, code: string) {
+  return page.evaluate((source) => {
+    const js = decodeURIComponent(source.replace(/^javascript:/, ""));
+    let opened = "";
+    (window as unknown as { open: (u: string) => null }).open = (u: string) => {
+      opened = u;
+      return null;
+    };
+    eval(js);
+    return opened;
+  }, code);
+}
+
+test("kiest de hoofdfoto, niet de poster van een video ertussen", async ({
+  page,
+  baseURL,
+}) => {
+  await page.route("https://webshop.test/fc27", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_VIDEO }),
+  );
+  await page.goto("https://webshop.test/fc27");
+
+  const target = await runBookmarklet(page, buildBookmarklet(baseURL!));
+  const params = new URL(target).searchParams;
+
+  expect(params.get("image")).toBe("https://media.example.com/fc27-cover.jpg");
+  expect(params.get("image")).not.toContain("video");
+  expect(params.get("image")).not.toContain("poster");
+});
+
+test("stuurt de andere foto's mee zodat je zelf kunt kiezen", async ({
+  page,
+  baseURL,
+}) => {
+  await page.route("https://webshop.test/fc27b", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_VIDEO }),
+  );
+  await page.goto("https://webshop.test/fc27b");
+
+  const target = await runBookmarklet(page, buildBookmarklet(baseURL!));
+  const images = (new URL(target).searchParams.get("images") ?? "").split(" ");
+
+  // De hoofdfoto staat vooraan, de videoposter zit er niet bij.
+  expect(images[0]).toBe("https://media.example.com/fc27-cover.jpg");
+  expect(images).toContain("https://media.example.com/fc27-screenshot.jpg");
+  expect(images.join(" ")).not.toContain("video-poster");
+});
+
+test("op het bewaarscherm kun je een andere foto aanwijzen", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("Naam").fill("Foto Kiezer");
+  await page.getByLabel("E-mailadres").fill(`bm4-${Date.now()}@example.com`);
+  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
+  await page.getByRole("button", { name: "Account maken" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByLabel("Naam van de lijst").fill("Games");
+  await page.getByRole("button", { name: "Lijst maken" }).click();
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+
+  const images = [
+    "https://media.example.com/fc27-cover.jpg",
+    "https://media.example.com/fc27-screenshot.jpg",
+  ].join(" ");
+  await page.goto(
+    `/add?title=EA%20SPORTS%20FC%2027&price=79.99&url=https%3A%2F%2Fwebshop.test%2Ffc27` +
+      `&image=${encodeURIComponent("https://media.example.com/fc27-cover.jpg")}` +
+      `&images=${encodeURIComponent(images)}`,
+  );
+
+  await expect(page.getByText("Andere foto's van de pagina")).toBeVisible();
+  const keuzes = page.locator('button[aria-pressed]').filter({ has: page.locator("img") });
+  await expect(keuzes).toHaveCount(2);
+  // De eerste staat aan, de tweede niet.
+  await expect(keuzes.nth(0)).toHaveAttribute("aria-pressed", "true");
+  await keuzes.nth(1).click();
+  await expect(keuzes.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(keuzes.nth(0)).toHaveAttribute("aria-pressed", "false");
+});

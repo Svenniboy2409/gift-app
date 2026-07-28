@@ -117,6 +117,7 @@
   "gift.delete": "Delete",
   "gift.deleteConfirm": "Delete this gift?",
   "gift.uploadImage": "Choose your own photo",
+  "gift.otherPhotos": "Other photos from the page",
   "gift.removeImage": "Remove photo",
   "gift.noImage": "No photo",
   "gift.empty.title": "No gifts yet",

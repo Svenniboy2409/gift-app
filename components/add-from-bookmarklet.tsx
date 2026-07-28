@@ -15,9 +15,12 @@ export type PickerList = { id: string; title: string };
 export function AddFromBookmarklet({
   lists,
   draft,
+  imageChoices,
 }: {
   lists: PickerList[];
   draft: Partial<GiftDraft>;
+  /** De andere foto's die op de productpagina stonden. */
+  imageChoices?: string[];
 }) {
   const { t } = useI18n();
   const [saved, setSaved] = useState(false);
@@ -72,6 +75,7 @@ export function AddFromBookmarklet({
           onDone={done}
           onCancel={() => window.close()}
           cancelLabel={t("bookmarklet.close")}
+          imageChoices={imageChoices}
         >
           <div>
             <label className="label" htmlFor="listId">

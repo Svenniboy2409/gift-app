@@ -18,6 +18,7 @@ type Params = Promise<{
   price?: string;
   currency?: string;
   description?: string;
+  images?: string;
 }>;
 
 /** Alleen doorlaten wat een echte http(s)-link is. */
@@ -51,6 +52,13 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
   ]);
 
   const image = safeUrl(params.image);
+
+  // De bewaarknop stuurt een handvol kandidaten mee, gescheiden door spaties.
+  const choices = (params.images ?? "")
+    .split(/\s+/)
+    .map(safeUrl)
+    .filter((url) => url && !looksLikeJunkImage(url))
+    .slice(0, 5);
 
   return (
     <>
@@ -86,8 +94,9 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
               price: (params.price ?? "").slice(0, 20),
               currency: (params.currency ?? "EUR").slice(0, 3).toUpperCase(),
               url: safeUrl(params.url),
-              imageUrl: looksLikeJunkImage(image) ? "" : image,
+              imageUrl: looksLikeJunkImage(image) ? (choices[0] ?? "") : image,
             }}
+            imageChoices={choices}
           />
         )}
       </main>

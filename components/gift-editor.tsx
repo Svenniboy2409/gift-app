@@ -63,6 +63,7 @@ export function GiftEditor({
   notice,
   children,
   cancelLabel,
+  imageChoices,
 }: {
   draft: GiftDraft;
   action: (state: FormState, formData: FormData) => Promise<FormState>;
@@ -72,6 +73,8 @@ export function GiftEditor({
   /** Extra velden bovenaan het formulier, zoals de lijstkeuze. */
   children?: React.ReactNode;
   cancelLabel?: string;
+  /** Andere foto's van de pagina, om er zelf een uit te kiezen. */
+  imageChoices?: string[];
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
@@ -150,6 +153,36 @@ export function GiftEditor({
               </span>
             )}
           </div>
+          {imageChoices && imageChoices.length > 1 && (
+            <div className="mt-2">
+              <span className="label">{t("gift.otherPhotos")}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {imageChoices.map((choice) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    onClick={() => setImageUrl(choice)}
+                    aria-pressed={choice === imageUrl}
+                    className={`relative size-12 overflow-hidden rounded-lg border bg-sunken transition-colors ${
+                      choice === imageUrl
+                        ? "border-accent ring-2 ring-accent"
+                        : "border-line hover:border-line-strong"
+                    }`}
+                  >
+                    <Image
+                      src={choice}
+                      alt=""
+                      fill
+                      sizes="48px"
+                      className="object-contain p-0.5"
+                      unoptimized
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-2 flex flex-wrap gap-1.5">
             <button
               type="button"
