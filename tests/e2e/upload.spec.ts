@@ -123,6 +123,22 @@ test("een grote telefoonfoto wordt verkleind in plaats van geweigerd", async ({
   ).toBeVisible();
 });
 
+test("de zelftest in de instellingen zegt of opslaan werkt", async ({ page }) => {
+  await page.goto("/register");
+  await page.getByLabel("Naam").fill("Zelftest");
+  await page.getByLabel("E-mailadres").fill(`up5-${Date.now()}@example.com`);
+  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
+  await page.getByRole("button", { name: "Account maken" }).click();
+  await page.waitForURL(/\/dashboard$/);
+
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Opslag testen" }).click();
+
+  // Lokaal draait de app zonder Blob-token, dus dan hoort de uitkomst te zijn
+  // dat opslaan lukt via het bestandssysteem.
+  await expect(page.getByText(/Opslaan werkt/i)).toBeVisible({ timeout: 15_000 });
+});
+
 test("een HEIC die niet omgezet kan worden krijgt een eigen uitleg", async ({
   page,
 }) => {

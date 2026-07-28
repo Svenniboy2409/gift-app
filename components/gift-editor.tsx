@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import type { FormState } from "@/lib/actions/auth";
 import { compressImage } from "@/lib/image-compress";
 import { useI18n } from "@/lib/i18n/client";
+import { uploadErrorKey } from "@/lib/upload-errors";
 import type { MessageKey } from "@/lib/i18n";
 
 export type GiftDraft = {
@@ -41,21 +42,6 @@ export function centsToInput(cents: number | null, locale: string) {
   const value = (cents / 100).toFixed(2);
   return locale === "nl" ? value.replace(".", ",") : value;
 }
-
-/**
- * De foutcodes die /api/upload teruggeeft, elk met een eigen uitleg. Zonder
- * deze vertaalslag zou alles op "er ging iets mis" uitkomen, en dan weet je
- * niet of je een andere foto moet kiezen of dat de server iets mist.
- */
-const UPLOAD_ERRORS: Record<string, MessageKey> = {
-  "storage-unconfigured": "error.storage-unconfigured",
-  "storage-failed": "error.storage-failed",
-  "too-large": "error.image-too-large",
-  "heic-image": "error.heic-image",
-  "unsupported-type": "error.unsupported-image",
-  "rate-limited": "error.too-many-uploads",
-  unauthorized: "error.session-expired",
-};
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -97,6 +83,8 @@ export function GiftEditor({
   const [imageUrl, setImageUrl] = useState(draft.imageUrl);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /** De letterlijke tekst van de opslagdienst, als die er is. */
+  const [uploadDetail, setUploadDetail] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
 
@@ -111,6 +99,7 @@ export function GiftEditor({
   async function upload(file: File) {
     setUploading(true);
     setUploadError(null);
+    setUploadDetail(null);
     try {
       // Telefoonfoto's zijn al gauw enkele megabytes. Die verkleinen we hier,
       // vóór het versturen: dat scheelt wachttijd, opslag, en het houdt de
@@ -123,14 +112,15 @@ export function GiftEditor({
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {
           error?: string;
+          detail?: string;
         } | null;
+        if (data?.detail) setUploadDetail(data.detail);
         throw new Error(data?.error ?? "upload-failed");
       }
       const data = (await response.json()) as { url: string };
       setImageUrl(data.url);
     } catch (error) {
-      const reason = (error as Error).message;
-      setUploadError(t(UPLOAD_ERRORS[reason] ?? "error.generic"));
+      setUploadError(t(uploadErrorKey((error as Error).message)));
     } finally {
       setUploading(false);
     }
@@ -232,7 +222,14 @@ export function GiftEditor({
             }}
           />
           {uploadError && (
-            <p className="mt-1 text-xs text-danger">{uploadError}</p>
+            <div className="mt-1">
+              <p className="text-xs text-danger">{uploadError}</p>
+              {uploadDetail && (
+                <p className="mt-0.5 break-words text-[11px] text-subtle">
+                  {uploadDetail}
+                </p>
+              )}
+            </div>
           )}
         </div>
 

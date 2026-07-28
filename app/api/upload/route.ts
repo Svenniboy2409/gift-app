@@ -11,6 +11,13 @@ import { StorageError, storeImage } from "@/lib/storage";
 export const runtime = "nodejs";
 
 /**
+ * Een foto versturen vanaf een telefoon op mobiel internet kan tegen de
+ * standaardgrens van tien seconden aanlopen — de tijd die het verzoek zelf
+ * onderweg is telt mee.
+ */
+export const maxDuration = 30;
+
+/**
  * De browser verkleint foto's al tot ongeveer 500 kB, dus dit is puur een
  * vangnet. Bewust onder de 4,5 MB die Vercel zelf als grens voor een verzoek
  * aanhoudt: dan komt een te grote foto bij ons uit op een duidelijke melding in
@@ -54,12 +61,16 @@ export async function POST(request: Request) {
     const url = await storeImage(bytes, type);
     return NextResponse.json({ url });
   } catch (error) {
-    if (error instanceof StorageError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
-    }
-    // Alles wat hier nog langskomt is een storing bij de opslagdienst zelf.
-    // Beter een herkenbare melding dan een kale 500 zonder uitleg.
     console.error("upload failed", error);
-    return NextResponse.json({ error: "storage-failed" }, { status: 502 });
+    if (error instanceof StorageError) {
+      return NextResponse.json(
+        { error: error.message, detail: error.detail },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json(
+      { error: "storage-failed", detail: (error as Error).message?.slice(0, 300) },
+      { status: 502 },
+    );
   }
 }

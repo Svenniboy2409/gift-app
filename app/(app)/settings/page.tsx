@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { getTranslator } from "@/lib/i18n/server";
 import { BookmarkletCard } from "@/components/bookmarklet-card";
 import { PasswordForm, ProfileForm } from "@/components/settings-forms";
+import { StorageCheck } from "@/components/storage-check";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -23,6 +24,8 @@ export default async function SettingsPage() {
       </section>
 
       <BookmarkletCard />
+
+      <StorageCheck />
 
       <section className="card p-6">
         <h2 className="mb-4 font-semibold text-ink">{t("settings.password")}</h2>
