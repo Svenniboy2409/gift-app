@@ -5,7 +5,13 @@ import { StorageError, storeImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
-const MAX_BYTES = 5 * 1024 * 1024;
+/**
+ * De browser verkleint foto's al tot ongeveer 500 kB, dus dit is puur een
+ * vangnet. Bewust onder de 4,5 MB die Vercel zelf als grens voor een verzoek
+ * aanhoudt: dan komt een te grote foto bij ons uit op een duidelijke melding in
+ * plaats van een kale foutcode van het platform.
+ */
+const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Set([
   "image/jpeg",
   "image/png",

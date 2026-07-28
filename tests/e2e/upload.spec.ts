@@ -53,7 +53,77 @@ test("een eigen foto uploaden en terugzien bij het cadeau", async ({ page }) => 
   await expect(kaart.locator("img")).toBeVisible();
 });
 
-test("een te groot bestand wordt geweigerd met uitleg", async ({ page }) => {
+test("een grote telefoonfoto wordt verkleind in plaats van geweigerd", async ({
+  page,
+}) => {
+  await page.goto("/register");
+  await page.getByLabel("Naam").fill("Grote Foto");
+  await page.getByLabel("E-mailadres").fill(`up3-${Date.now()}@example.com`);
+  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
+  await page.getByRole("button", { name: "Account maken" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByLabel("Naam van de lijst").fill("Grote fotos");
+  await page.getByRole("button", { name: "Lijst maken" }).click();
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+
+  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await page.getByLabel("Naam", { exact: true }).fill("Grote foto");
+
+  // Een echte foto van 3000x3000 met ruis, zodat hij niet weg te comprimeren
+  // is — vergelijkbaar met wat een telefooncamera oplevert.
+  const origineleGrootte = await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 3000;
+    canvas.height = 3000;
+    const ctx = canvas.getContext("2d")!;
+    const data = ctx.createImageData(3000, 3000);
+    for (let i = 0; i < data.data.length; i += 4) {
+      data.data[i] = Math.random() * 255;
+      data.data[i + 1] = Math.random() * 255;
+      data.data[i + 2] = Math.random() * 255;
+      data.data[i + 3] = 255;
+    }
+    ctx.putImageData(data, 0, 0);
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/jpeg", 1),
+    );
+    const file = new File([blob], "telefoon.jpg", { type: "image/jpeg" });
+
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    return blob.size;
+  });
+
+  // De bronfoto is fors: ruim boven wat we willen opslaan.
+  expect(origineleGrootte).toBeGreaterThan(2 * 1024 * 1024);
+
+  // Geen foutmelding, maar gewoon een voorvertoning.
+  const voorvertoning = page.locator("form img").first();
+  await expect(voorvertoning).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/te groot/i)).toHaveCount(0);
+
+  // En wat er is opgeslagen is een stuk kleiner dan het origineel.
+  const bron = await voorvertoning.getAttribute("src");
+  const opgeslagenGrootte = await page.evaluate(async (url) => {
+    const res = await fetch(url!);
+    return (await res.blob()).size;
+  }, bron);
+
+  expect(opgeslagenGrootte).toBeLessThan(600 * 1024);
+  expect(opgeslagenGrootte).toBeLessThan(origineleGrootte / 2);
+
+  await page.getByRole("button", { name: "Cadeau opslaan" }).click();
+  await expect(
+    page.locator("li").filter({ hasText: "Grote foto" }).locator("img"),
+  ).toBeVisible();
+});
+
+test("een onleesbaar bestand wordt geweigerd met uitleg", async ({ page }) => {
   await page.goto("/register");
   await page.getByLabel("Naam").fill("Grote Foto");
   await page.getByLabel("E-mailadres").fill(`up2-${Date.now()}@example.com`);
@@ -66,10 +136,13 @@ test("een te groot bestand wordt geweigerd met uitleg", async ({ page }) => {
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
 
   await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+
+  // Geen leesbare afbeelding: de browser kan hem dus niet verkleinen, en dan
+  // moet het vangnet op de server hem weigeren met een begrijpelijke melding.
   await page.locator('input[type="file"]').setInputFiles({
-    name: "enorm.png",
-    mimeType: "image/png",
-    buffer: Buffer.concat([PNG, Buffer.alloc(6 * 1024 * 1024)]),
+    name: "kapot.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.alloc(5 * 1024 * 1024, 7),
   });
 
   await expect(page.getByText(/te groot/i)).toBeVisible({ timeout: 15_000 });

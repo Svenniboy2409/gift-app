@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/lib/actions/auth";
+import { compressImage } from "@/lib/image-compress";
 import { useI18n } from "@/lib/i18n/client";
 import type { MessageKey } from "@/lib/i18n";
 
@@ -96,8 +97,13 @@ export function GiftEditor({
     setUploading(true);
     setUploadError(null);
     try {
+      // Telefoonfoto's zijn al gauw enkele megabytes. Die verkleinen we hier,
+      // vóór het versturen: dat scheelt wachttijd, opslag, en het houdt de
+      // upload onder de grens die de server aanhoudt.
+      const prepared = await compressImage(file);
+
       const body = new FormData();
-      body.set("file", file);
+      body.set("file", prepared);
       const response = await fetch("/api/upload", { method: "POST", body });
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as {

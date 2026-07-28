@@ -42,7 +42,7 @@
   "error.handle-invalid": "Gebruik alleen letters, cijfers en streepjes.",
   "error.invalid-url": "Dat is geen geldige link.",
   "error.storage-unconfigured": "Foto's opslaan werkt nog niet op deze server. Zet BLOB_READ_WRITE_TOKEN in de instellingen (zie README).",
-  "error.image-too-large": "Deze foto is te groot. Kies er een van maximaal 5 MB.",
+  "error.image-too-large": "Deze foto is te groot en kon niet verkleind worden. Probeer er een uit je fotobibliotheek, of maak er zelf een kleinere van.",
   "error.generic": "Er ging iets mis. Probeer het opnieuw.",
   "dashboard.title": "Mijn lijsten",
   "dashboard.subtitle": "Maak een lijst per gelegenheid en deel hem met wie je wil.",

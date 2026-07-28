@@ -42,7 +42,7 @@
   "error.handle-invalid": "Use only letters, numbers and dashes.",
   "error.invalid-url": "That's not a valid link.",
   "error.storage-unconfigured": "Saving photos isn't set up on this server yet. Set BLOB_READ_WRITE_TOKEN in the settings (see the README).",
-  "error.image-too-large": "That photo is too large. Please choose one of at most 5 MB.",
+  "error.image-too-large": "That photo is too large and couldn't be shrunk. Try one from your photo library, or make a smaller version yourself.",
   "error.generic": "Something went wrong. Please try again.",
   "dashboard.title": "My lists",
   "dashboard.subtitle": "Create a list per occasion and share it with whoever you like.",

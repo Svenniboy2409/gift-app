@@ -209,6 +209,14 @@ volgorde te vinden (per veld wint de eerste treffer):
 
 ### Afbeeldingen
 
+Een foto die je zelf kiest wordt **in de browser verkleind** voordat hij verstuurd
+wordt (`lib/image-compress.ts`): maximaal 1600 pixels aan de lange zijde, en de
+hoogste kwaliteit die onder de 500 kB blijft. Telefoonfoto's van een paar
+megabyte worden dus niet geweigerd maar teruggebracht. Dat moet ook wel: Vercel
+kapt verzoeken boven ongeveer 4,5 MB af, dus zo'n upload zou anders sowieso
+stuklopen. Lukt het verkleinen niet — een kapot of onleesbaar bestand — dan
+weigert de server hem alsnog, met uitleg.
+
 Bij voorkeur wordt de foto gedownload en als eigen kopie opgeslagen, zodat hij
 blijft werken als de webshop de originele URL wijzigt.
 
