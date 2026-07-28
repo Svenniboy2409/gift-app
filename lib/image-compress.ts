@@ -10,11 +10,29 @@
  *
  * Dus schalen we hem terug tot maximaal 1600 pixels aan de lange zijde en
  * zoeken we de hoogste kwaliteit die onder de doelgrootte blijft.
+ *
+ * Dezelfde route lost meteen HEIC op: dat is wat een iPhone standaard maakt, en
+ * wat vrijwel geen andere browser kan tonen. Safari kan het wél lezen, dus daar
+ * komt er hier een gewone JPEG uit — ongeacht hoe klein het bestand al was.
  */
 
 const MAX_BYTES = 500 * 1024;
 const MAX_SIDE = 1600;
 const QUALITIES = [0.85, 0.75, 0.65, 0.55, 0.45];
+
+/**
+ * De formaten die de server rechtstreeks aanneemt. Al het andere — een HEIC uit
+ * de iPhone-galerij, of een bestand waarvan de browser het type niet meestuurt
+ * — moet hoe dan ook door het canvas, ook als het klein genoeg is. Safari kan
+ * HEIC zelf lezen, dus daar levert die omweg gewoon een JPEG op.
+ */
+const PASSES_AS_IS = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
 
 /** Tekent de foto op een verkleind canvas. */
 function drawScaled(
@@ -82,8 +100,9 @@ export async function compressImage(
   const maxBytes = options.maxBytes ?? MAX_BYTES;
   const maxSide = options.maxSide ?? MAX_SIDE;
 
-  if (!file.type.startsWith("image/")) return file;
-  if (file.size <= maxBytes) return file;
+  // Een formaat dat de server aanneemt en dat al klein genoeg is: laten staan.
+  const needsConversion = !PASSES_AS_IS.has(file.type);
+  if (!needsConversion && file.size <= maxBytes) return file;
 
   let source: ImageBitmap | HTMLImageElement;
   try {
@@ -117,10 +136,12 @@ export async function compressImage(
     }
 
     // Zelfs op de laagste stand nog te groot: geef dan het kleinste terug wat
-    // we hebben kunnen maken.
+    // we hebben kunnen maken. Bij een formaat dat de server niet aanneemt gaat
+    // die versie altijd voor, ook als hij groter uitvalt dan het origineel —
+    // een grotere JPEG is nog altijd beter dan een HEIC die geweigerd wordt.
     const canvas = drawScaled(source, width * 0.4, height * 0.4);
     const blob = canvas ? await toBlob(canvas, 0.4) : null;
-    if (blob && blob.size < file.size) {
+    if (blob && (needsConversion || blob.size < file.size)) {
       return new File([blob], renameToJpeg(file.name), { type: "image/jpeg" });
     }
     return file;

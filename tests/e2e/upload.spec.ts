@@ -123,6 +123,39 @@ test("een grote telefoonfoto wordt verkleind in plaats van geweigerd", async ({
   ).toBeVisible();
 });
 
+test("een HEIC die niet omgezet kan worden krijgt een eigen uitleg", async ({
+  page,
+}) => {
+  await page.goto("/register");
+  await page.getByLabel("Naam").fill("Heic Foto");
+  await page.getByLabel("E-mailadres").fill(`up4-${Date.now()}@example.com`);
+  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
+  await page.getByRole("button", { name: "Account maken" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByLabel("Naam van de lijst").fill("Heic");
+  await page.getByRole("button", { name: "Lijst maken" }).click();
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+
+  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+
+  // Een HEIC-kop: precies wat een iPhone uit de galerij meestuurt. Chromium
+  // kan dat niet lezen, dus hij komt ongewijzigd bij de server aan — en daar
+  // hoort dan de uitleg over HEIC te volgen, niet "er ging iets mis".
+  const heic = Buffer.concat([
+    Buffer.from([0x00, 0x00, 0x00, 0x18]),
+    Buffer.from("ftypheic"),
+    Buffer.alloc(2048),
+  ]);
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "IMG_0001.HEIC",
+    mimeType: "image/heic",
+    buffer: heic,
+  });
+
+  await expect(page.getByText(/HEIC-formaat/i)).toBeVisible({ timeout: 15_000 });
+});
+
 test("een onleesbaar bestand wordt geweigerd met uitleg", async ({ page }) => {
   await page.goto("/register");
   await page.getByLabel("Naam").fill("Grote Foto");

@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  ALLOWED_IMAGE_TYPES,
+  HEIF_TYPES,
+  sniffImageType,
+} from "@/lib/image-type";
 import { rateLimit } from "@/lib/rate-limit";
 import { StorageError, storeImage } from "@/lib/storage";
 
@@ -12,13 +17,6 @@ export const runtime = "nodejs";
  * plaats van een kale foutcode van het platform.
  */
 const MAX_BYTES = 4 * 1024 * 1024;
-const ALLOWED = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-]);
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -39,18 +37,29 @@ export async function POST(request: Request) {
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "too-large" }, { status: 413 });
   }
-  if (!ALLOWED.has(file.type)) {
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
+  // Het type dat de browser meestuurt is niet betrouwbaar (iPhones laten het
+  // soms leeg), dus we kijken naar de bytes zelf.
+  const type = sniffImageType(bytes);
+  if (type && HEIF_TYPES.has(type)) {
+    return NextResponse.json({ error: "heic-image" }, { status: 415 });
+  }
+  if (!type || !ALLOWED_IMAGE_TYPES.has(type)) {
     return NextResponse.json({ error: "unsupported-type" }, { status: 415 });
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
   try {
-    const url = await storeImage(bytes, file.type);
+    const url = await storeImage(bytes, type);
     return NextResponse.json({ url });
   } catch (error) {
     if (error instanceof StorageError) {
       return NextResponse.json({ error: error.message }, { status: 503 });
     }
-    throw error;
+    // Alles wat hier nog langskomt is een storing bij de opslagdienst zelf.
+    // Beter een herkenbare melding dan een kale 500 zonder uitleg.
+    console.error("upload failed", error);
+    return NextResponse.json({ error: "storage-failed" }, { status: 502 });
   }
 }

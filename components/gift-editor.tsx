@@ -42,6 +42,21 @@ export function centsToInput(cents: number | null, locale: string) {
   return locale === "nl" ? value.replace(".", ",") : value;
 }
 
+/**
+ * De foutcodes die /api/upload teruggeeft, elk met een eigen uitleg. Zonder
+ * deze vertaalslag zou alles op "er ging iets mis" uitkomen, en dan weet je
+ * niet of je een andere foto moet kiezen of dat de server iets mist.
+ */
+const UPLOAD_ERRORS: Record<string, MessageKey> = {
+  "storage-unconfigured": "error.storage-unconfigured",
+  "storage-failed": "error.storage-failed",
+  "too-large": "error.image-too-large",
+  "heic-image": "error.heic-image",
+  "unsupported-type": "error.unsupported-image",
+  "rate-limited": "error.too-many-uploads",
+  unauthorized: "error.session-expired",
+};
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   const { t } = useI18n();
@@ -115,13 +130,7 @@ export function GiftEditor({
       setImageUrl(data.url);
     } catch (error) {
       const reason = (error as Error).message;
-      setUploadError(
-        reason === "storage-unconfigured"
-          ? t("error.storage-unconfigured")
-          : reason === "too-large"
-            ? t("error.image-too-large")
-            : t("error.generic"),
-      );
+      setUploadError(t(UPLOAD_ERRORS[reason] ?? "error.generic"));
     } finally {
       setUploading(false);
     }
@@ -211,7 +220,10 @@ export function GiftEditor({
           <input
             ref={fileInput}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+            // Bewust breed: een iPhone levert HEIC uit de galerij, en met een
+            // krappe lijst valt zo'n foto in de kiezer buiten de boot. We zetten
+            // hem hierboven zelf om naar JPEG.
+            accept="image/*"
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
