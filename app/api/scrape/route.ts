@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 
 // De leesdiensten hebben even nodig om een pagina op te halen; de standaard
 // van 10 seconden is dan te krap.
-export const maxDuration = 30;
+export const maxDuration = 45;
 
 export type ScrapeResponse = {
   ok: boolean;
@@ -43,14 +43,33 @@ function normalizeUrl(input: string) {
   }
 }
 
-/** Downloadt een afbeelding en bewaart er een eigen kopie van. */
+/**
+ * Bewaart bij voorkeur een eigen kopie van de afbeelding, maar valt terug op de
+ * originele URL.
+ *
+ * Dat terugvallen doet er echt toe. Zonder BLOB_READ_WRITE_TOKEN is het
+ * bestandssysteem op Vercel niet schrijfbaar, en dan zou er nooit een foto
+ * verschijnen. En áls we een plaatje zelf niet kunnen downloaden, wil dat nog
+ * niet zeggen dat de bezoeker dat ook niet kan: die haalt hem op vanaf zijn
+ * eigen verbinding, en daar hebben webshops geen bezwaar tegen.
+ *
+ * Een eigen kopie blijft beter — die overleeft het als de winkel de URL wijzigt
+ * — dus we proberen dat eerst.
+ */
 async function storeRemoteImage(imageUrl: string | null, referer: string) {
-  if (!imageUrl) return null;
+  if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) return null;
+
   try {
     const image = await fetchImage(imageUrl, referer);
-    return image ? await storeImage(image.bytes, image.contentType) : null;
+    if (!image) return imageUrl;
+    try {
+      return await storeImage(image.bytes, image.contentType);
+    } catch {
+      // Geen opslag ingericht: dan linken we rechtstreeks naar de winkel.
+      return imageUrl;
+    }
   } catch {
-    return null;
+    return imageUrl;
   }
 }
 

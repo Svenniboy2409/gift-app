@@ -207,8 +207,20 @@ volgorde te vinden (per veld wint de eerste treffer):
    nogal eens verouderd is.
 5. Als laatste redmiddel de `<h1>` of `<title>` plus de eerste grote afbeelding
 
-De gevonden afbeelding wordt gedownload en als eigen kopie opgeslagen, zodat
-foto's blijven werken als de webshop de originele URL wijzigt.
+### Afbeeldingen
+
+Bij voorkeur wordt de foto gedownload en als eigen kopie opgeslagen, zodat hij
+blijft werken als de webshop de originele URL wijzigt.
+
+Lukt dat niet, dan gebruikt de app gewoon de originele URL. Dat gebeurt in twee
+gevallen, en in allebei is een foto beter dan geen foto:
+
+- **Er is geen opslag ingericht.** Zonder `BLOB_READ_WRITE_TOKEN` is het
+  bestandssysteem op Vercel niet schrijfbaar. Voorheen verdween de foto dan
+  helemaal.
+- **Wij kunnen het plaatje niet downloaden.** Dat zegt niets over de bezoeker:
+  die haalt de foto op vanaf zijn eigen verbinding, en daar heeft de winkel geen
+  bezwaar tegen.
 
 ### Als een webshop ons buiten de deur houdt
 
@@ -229,13 +241,22 @@ vanaf hun eigen infrastructuur en geven ons de inhoud terug:
 
 | Dienst | Wat het teruggeeft | Kosten |
 | --- | --- | --- |
-| [r.jina.ai](https://jina.ai/reader/) | de pagina als leesbare tekst, inclusief JavaScript | gratis, geen sleutel nodig |
+| [r.jina.ai](https://jina.ai/reader/) | de pagina, inclusief wat JavaScript oplevert | gratis, geen sleutel nodig |
+| [allorigins.win](https://allorigins.win) | de pagina onbewerkt | gratis, geen sleutel nodig |
 | [microlink.io](https://microlink.io) | titel, omschrijving en afbeelding als JSON | gratis tot een bescheiden aantal per dag |
 
-Ze worden alleen aangeroepen als onze eigen poging niets bruikbaars oplevert, en
-we stoppen zodra er één werkt. Elke dienst krijgt 9 seconden, samen maximaal 18;
-daarna gaan we door met wat we hebben. Uit te zetten met `SCRAPER_READERS=off`
-— er gaan alleen openbare productlinks naartoe.
+Ze worden alleen aangeroepen als onze eigen poging niets bruikbaars oplevert.
+Dan gaan ze **alle drie tegelijk** op pad en wint de eerste die iets bruikbaars
+teruggeeft. Dat is bewust: welke dienst een winkel doorlaat verschilt per geval,
+en na elkaar proberen betekent dat de traagste bepaalt hoe lang je wacht. De
+grens ligt op 22 seconden.
+
+Ook hun eigen foutpagina's worden als rommel herkend — r.jina.ai antwoordt
+bijvoorbeeld met de titel "IP address 34.96.49.86 is blocked" als een winkel
+hén weert. Zonder die controle belandt dat als productnaam in je lijst.
+
+Uit te zetten met `SCRAPER_READERS=off`; er gaan alleen openbare productlinks
+naartoe.
 
 **2. De link zelf** (`lib/scraper/from-url.ts`), als ook dat niets oplevert:
 

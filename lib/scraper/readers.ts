@@ -24,10 +24,12 @@ export type ReaderOutcome = {
   source: string;
 };
 
-/** Per dienst, zodat één trage dienst het verzoek niet gijzelt. */
-const READER_TIMEOUT_MS = 9_000;
-/** Samen; daarna geven we op en vullen we aan met wat de link zelf zegt. */
-const READER_BUDGET_MS = 18_000;
+/**
+ * Ruim genomen: deze diensten halen een hele pagina op en voeren soms ook nog
+ * JavaScript uit, en dat kost tijd. Omdat ze naast elkaar draaien wachten we
+ * nooit langer dan dit in totaal.
+ */
+const READER_TIMEOUT_MS = 22_000;
 
 function readersEnabled() {
   return process.env.SCRAPER_READERS !== "off";
@@ -38,18 +40,39 @@ function readersEnabled() {
  * hem terug als leesbare tekst. Gratis zonder sleutel.
  */
 async function readViaJina(url: string): Promise<ReaderOutcome | null> {
+  // We vragen om HTML: dan kunnen we onze eigen extractie erop loslaten en
+  // krijgen we ook JSON-LD en OpenGraph mee — inclusief de prijs. Geeft de
+  // dienst toch markdown terug, dan vangt parseReaderText dat op.
   const page = await fetchHtml(`https://r.jina.ai/${url}`, {
     allowText: true,
     timeoutMs: READER_TIMEOUT_MS,
     headers: {
-      Accept: "text/plain, text/html;q=0.9, */*;q=0.8",
-      "X-Return-Format": "markdown",
+      Accept: "text/html, text/plain;q=0.9, */*;q=0.8",
+      "X-Return-Format": "html",
     },
   });
   if (!page.html) return null;
 
-  const product = parseJinaMarkdown(page.html, url);
+  const product = parseReaderText(page.html, url);
   return product.title ? { product, source: "jina" } : null;
+}
+
+/**
+ * AllOrigins — haalt een pagina op en geeft hem onbewerkt terug. Gratis, geen
+ * sleutel. Andere infrastructuur dan Jina, dus een winkel die de één weert
+ * laat de ander vaak wel door.
+ */
+async function readViaAllOrigins(url: string): Promise<ReaderOutcome | null> {
+  const endpoint = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  const page = await fetchHtml(endpoint, {
+    allowText: true,
+    timeoutMs: READER_TIMEOUT_MS,
+    headers: { Accept: "text/html, */*;q=0.8" },
+  });
+  if (!page.html) return null;
+
+  const product = parseReaderText(page.html, url);
+  return product.title ? { product, source: "allorigins" } : null;
 }
 
 /**
@@ -72,8 +95,28 @@ async function readViaMicrolink(url: string): Promise<ReaderOutcome | null> {
 /* --- Parsers, los van het netwerk zodat ze te testen zijn ---------------- */
 
 /**
- * De uitvoer van Jina begint met kopregels ("Title:", "URL Source:") gevolgd
- * door de pagina als markdown.
+ * Een leesdienst geeft ons HTML of platte tekst terug. HTML kunnen we door de
+ * gewone extractie halen; bij tekst vallen we terug op de markdown-vorm.
+ */
+export function parseReaderText(
+  body: string,
+  pageUrl: string,
+): Partial<ExtractedProduct> {
+  const looksLikeHtml = /<html|<head|<meta|<body|<!doctype/i.test(
+    body.slice(0, 4000),
+  );
+
+  if (looksLikeHtml) {
+    const product = extractFromHtml(body, pageUrl);
+    if (product.title) return product;
+  }
+
+  return parseJinaMarkdown(body, pageUrl);
+}
+
+/**
+ * De platte-tekstvorm van Jina begint met kopregels ("Title:", "URL Source:")
+ * gevolgd door de pagina als markdown.
  */
 export function parseJinaMarkdown(
   text: string,
@@ -158,27 +201,45 @@ function safeHostname(url: string) {
 }
 
 /**
- * Probeert de leesdiensten op volgorde en stopt bij de eerste die een
- * bruikbare productnaam oplevert. Faalt er één, dan gaan we door met de
- * volgende; ze mogen de app nooit laten klappen.
+ * Bevraagt alle leesdiensten tegelijk en geeft de eerste terug die een
+ * bruikbare productnaam oplevert.
+ *
+ * Naast elkaar in plaats van na elkaar, want anders bepaalt de traagste dienst
+ * hoe lang je zit te wachten — en welke winkel welke dienst doorlaat, verschilt
+ * per geval. Een dienst die faalt of niets bruikbaars vindt telt gewoon niet
+ * mee; ze mogen de app nooit laten klappen.
  */
 export async function readViaFallbacks(
   url: string,
 ): Promise<ReaderOutcome | null> {
   if (!readersEnabled()) return null;
 
-  const deadline = Date.now() + READER_BUDGET_MS;
+  const readers = [readViaJina, readViaAllOrigins, readViaMicrolink];
 
-  for (const reader of [readViaJina, readViaMicrolink]) {
-    if (Date.now() >= deadline) break;
-    try {
-      const outcome = await reader(url);
-      if (outcome) return outcome;
-    } catch {
-      // Dienst plat, limiet bereikt of traag: gewoon de volgende proberen.
+  return new Promise<ReaderOutcome | null>((resolve) => {
+    let pending = readers.length;
+    let settled = false;
+
+    const finish = (outcome: ReaderOutcome | null) => {
+      if (settled) return;
+      if (outcome) {
+        settled = true;
+        resolve(outcome);
+        return;
+      }
+      pending -= 1;
+      if (pending === 0) {
+        settled = true;
+        resolve(null);
+      }
+    };
+
+    for (const reader of readers) {
+      reader(url)
+        .then(finish)
+        .catch(() => finish(null));
     }
-  }
-  return null;
+  });
 }
 
 /** Leest een pagina die we via een dienst binnenkregen als gewone HTML. */

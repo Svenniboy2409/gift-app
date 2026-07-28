@@ -60,3 +60,19 @@ describe("cleanTitle", () => {
     expect(cleanTitle("  Sonos Era 100  ", "www.amazon.nl")).toBe("Sonos Era 100");
   });
 });
+
+describe("foutpagina's van de leesdiensten", () => {
+  it("herkent de blokkademelding van r.jina.ai", () => {
+    expect(looksLikeJunkTitle("IP address 34.96.49.86 is blocked")).toBe(true);
+    expect(looksLikeJunkTitle("Your IP is blocked")).toBe(true);
+    expect(looksLikeJunkTitle("Rate limit exceeded")).toBe(true);
+    expect(looksLikeJunkTitle("Too Many Requests")).toBe(true);
+    expect(looksLikeJunkTitle("Error fetching page")).toBe(true);
+    expect(looksLikeJunkTitle("Tijdelijk niet beschikbaar")).toBe(true);
+  });
+
+  it("laat producten met een cijfer of adres in de naam met rust", () => {
+    expect(looksLikeJunkTitle("Sonos Era 100 draadloze speaker")).toBe(false);
+    expect(looksLikeJunkTitle("BILLY boekenkast 80x28x202 cm")).toBe(false);
+  });
+});

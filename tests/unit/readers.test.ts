@@ -3,6 +3,7 @@ import {
   extractFromHtml,
   parseJinaMarkdown,
   parseMicrolink,
+  parseReaderText,
 } from "@/lib/scraper/readers";
 
 describe("extractFromHtml", () => {
@@ -115,5 +116,38 @@ describe("parseMicrolink", () => {
       parseMicrolink(JSON.stringify({ status: "fail" }), "https://shop.nl/x"),
     ).toEqual({});
     expect(parseMicrolink("{}", "https://shop.nl/x")).toEqual({});
+  });
+});
+
+describe("parseReaderText", () => {
+  it("gebruikt de volledige extractie als de dienst HTML teruggeeft", () => {
+    // Dit is de winst van HTML boven platte tekst: we krijgen ook de prijs mee.
+    const html = `
+      <!doctype html><html><head>
+        <script type="application/ld+json">
+        {"@type":"Product","name":"HEMA badjas wafel wit",
+         "image":"https://cdn.hema.nl/badjas.jpg",
+         "offers":{"@type":"Offer","price":"29.50","priceCurrency":"EUR"}}
+        </script>
+      </head><body></body></html>`;
+
+    const product = parseReaderText(html, "https://www.hema.nl/p/badjas");
+    expect(product.title).toBe("HEMA badjas wafel wit");
+    expect(product.priceCents).toBe(2950);
+    expect(product.imageUrl).toBe("https://cdn.hema.nl/badjas.jpg");
+  });
+
+  it("valt terug op de tekstvorm als er geen HTML komt", () => {
+    const tekst = "Title: Houten puzzel 500 stukjes\n\nMarkdown Content:\n€ 12,99";
+    const product = parseReaderText(tekst, "https://shop.nl/p/puzzel");
+    expect(product.title).toBe("Houten puzzel 500 stukjes");
+    expect(product.priceCents).toBe(1299);
+  });
+
+  it("weigert de foutpagina van een leesdienst", () => {
+    // Precies wat r.jina.ai teruggaf toen bol.com hén blokkeerde.
+    const tekst = "Title: IP address 34.96.49.86 is blocked\n\nMarkdown Content:\n";
+    const product = parseReaderText(tekst, "https://www.bol.com/nl/nl/p/x/123/");
+    expect(product.title).toBeNull();
   });
 });

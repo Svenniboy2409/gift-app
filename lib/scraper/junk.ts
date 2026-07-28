@@ -24,6 +24,17 @@ const JUNK_PATTERNS = [
   /not found/i,
   /forbidden/i,
   /service unavailable/i,
+  // Foutpagina's van de leesdiensten zelf. r.jina.ai geeft bijvoorbeeld
+  // "IP address 34.96.49.86 is blocked" terug als bol.com hén weert.
+  /\bip address\b/i,
+  /\bis blocked\b/i,
+  /\bgeblokkeerd\b/i,
+  /rate.?limit/i,
+  /too many requests/i,
+  /temporarily unavailable/i,
+  /tijdelijk niet beschikbaar/i,
+  /^error\b/i,
+  /^fout\b/i,
   /security check/i,
   /verifieer/i,
   /verify you are/i,
