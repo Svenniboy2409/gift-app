@@ -137,3 +137,94 @@ test("uitgelogd kom je na inloggen terug bij het bewaarscherm", async ({
   await expect(page.getByLabel("Prijs")).toHaveValue("29,95");
   await fresh.close();
 });
+
+/**
+ * Een productpagina zoals bol.com hem serveert: het hoofdproduct plus een rij
+ * aanbevelingen, allemaal als los JSON-LD-blok. Het hoofdproduct staat hier
+ * bewust zónder afbeelding in zijn eigen blok, want dat is precies het geval
+ * waarin de foto van een aanbevolen product werd overgenomen.
+ */
+const SHOP_WITH_RECOMMENDATIONS = `<!doctype html>
+<html><head>
+  <title>Lattafa Khamrah - Testwinkel</title>
+  <meta property="og:image" content="https://media.example.com/HOOFDPRODUCT.jpg">
+  <script type="application/ld+json">
+  {"@type":"Product","name":"Lattafa Khamrah Eau de Parfum 100ml",
+   "offers":{"@type":"Offer","price":"34.95","priceCurrency":"EUR"}}
+  </script>
+  <script type="application/ld+json">
+  {"@type":"Product","name":"Heel ander parfum",
+   "image":"https://media.example.com/AANBEVOLEN.jpg",
+   "offers":{"@type":"Offer","price":"99.00","priceCurrency":"EUR"}}
+  </script>
+</head><body><h1>Lattafa Khamrah</h1></body></html>`;
+
+test("pakt de foto van het hoofdproduct, niet van een aanbeveling", async ({
+  page,
+  baseURL,
+}) => {
+  await page.route("https://webshop.test/aanbevelingen", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: SHOP_WITH_RECOMMENDATIONS,
+    }),
+  );
+  await page.goto("https://webshop.test/aanbevelingen");
+
+  const target = await page.evaluate((code) => {
+    const source = decodeURIComponent(code.replace(/^javascript:/, ""));
+    let opened = "";
+    (window as unknown as { open: (u: string) => null }).open = (u: string) => {
+      opened = u;
+      return null;
+    };
+    eval(source);
+    return opened;
+  }, buildBookmarklet(baseURL!));
+
+  const params = new URL(target).searchParams;
+  // Naam en prijs horen bij het hoofdproduct...
+  expect(params.get("title")).toBe("Lattafa Khamrah Eau de Parfum 100ml");
+  expect(params.get("price")).toBe("34.95");
+  // ...en de foto dus ook, niet die van het aanbevolen parfum.
+  expect(params.get("image")).toBe("https://media.example.com/HOOFDPRODUCT.jpg");
+  expect(params.get("image")).not.toContain("AANBEVOLEN");
+});
+
+/** Meerdere foto's in het hoofdproduct: de eerste is de hoofdafbeelding. */
+const SHOP_WITH_GALLERY = `<!doctype html>
+<html><head>
+  <script type="application/ld+json">
+  {"@type":"Product","name":"Sonos Era 100",
+   "image":["https://media.example.com/EERSTE.jpg",
+            "https://media.example.com/tweede.jpg",
+            "https://media.example.com/derde.jpg"],
+   "offers":{"@type":"Offer","price":"249.00","priceCurrency":"EUR"}}
+  </script>
+</head><body></body></html>`;
+
+test("kiest de eerste foto uit de reeks van het product", async ({
+  page,
+  baseURL,
+}) => {
+  await page.route("https://webshop.test/galerij", (route) =>
+    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_GALLERY }),
+  );
+  await page.goto("https://webshop.test/galerij");
+
+  const target = await page.evaluate((code) => {
+    const source = decodeURIComponent(code.replace(/^javascript:/, ""));
+    let opened = "";
+    (window as unknown as { open: (u: string) => null }).open = (u: string) => {
+      opened = u;
+      return null;
+    };
+    eval(source);
+    return opened;
+  }, buildBookmarklet(baseURL!));
+
+  expect(new URL(target).searchParams.get("image")).toBe(
+    "https://media.example.com/EERSTE.jpg",
+  );
+});
