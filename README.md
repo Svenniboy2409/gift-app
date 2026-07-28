@@ -132,13 +132,25 @@ hosten — hoef je niets extra's te doen.
 
 ### 5. Foto's koppelen (kan ook later)
 
-Op dezelfde opslagpagina: **Create → Blob**, koppelen aan `gift-app`. Dat zet
-`BLOB_READ_WRITE_TOKEN`.
+Op dezelfde opslagpagina: **Create → Blob**. Een store aanmaken is niet genoeg —
+open hem daarna en klik op **Connect Project**, kies `gift-app` en vink
+**Production, Preview én Development** aan. Pas dan verschijnt
+`BLOB_READ_WRITE_TOKEN` bij je omgevingsvariabelen, en pas na een **Redeploy**
+ziet de draaiende app hem ook.
 
-Sla je dit over, dan werkt de app volledig, behalve het uploaden van een eigen
-foto — het bestandssysteem van Vercel is namelijk alleen-lezen. De app zegt dat
-dan ook met zoveel woorden in plaats van een vage foutmelding. Foto's die uit een
-productlink komen worden wél gewoon opgehaald.
+Kies je bij het koppelen een eigen voorvoegsel, dan heet de variabele
+bijvoorbeeld `FOTOS_READ_WRITE_TOKEN`. Dat mag: de app zoekt zelf naar elke
+variabele op `_READ_WRITE_TOKEN` met een Blob-sleutel erin.
+
+Onder **Instellingen → Foto-opslag** in de app zelf zit een knop **Opslag
+testen**. Die zet een testbestandje neer, ruimt het weer op, en zegt of het
+werkte — inclusief de naam van de variabele die hij gebruikte. Handig om te
+controleren of deze stap gelukt is zonder er een echte foto voor te uploaden.
+
+Sla je dit helemaal over, dan werkt de app volledig, behalve het uploaden van een
+eigen foto — het bestandssysteem van Vercel is namelijk alleen-lezen. De app zegt
+dat dan ook met zoveel woorden in plaats van een vage foutmelding. Foto's die uit
+een productlink komen worden wél gewoon opgehaald.
 
 ### 6. Opnieuw deployen
 

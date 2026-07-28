@@ -23,8 +23,8 @@ export async function POST() {
   }
 
   try {
-    const { mode } = await checkStorage();
-    return NextResponse.json({ ok: true, mode });
+    const { mode, tokenName } = await checkStorage();
+    return NextResponse.json({ ok: true, mode, detail: tokenName });
   } catch (error) {
     console.error("storage check failed", error);
     const known = error instanceof StorageError;

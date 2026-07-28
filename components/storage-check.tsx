@@ -5,8 +5,8 @@ import { useI18n } from "@/lib/i18n/client";
 import { uploadErrorKey } from "@/lib/upload-errors";
 
 type Result =
-  | { ok: true; mode: "blob" | "filesystem" }
-  | { ok: false; error?: string; detail?: string };
+  | { ok: true; mode: "blob" | "filesystem"; detail?: string | null }
+  | { ok: false; error?: string; detail?: string | null };
 
 /**
  * Controleert of het opslaan van foto's werkt, zonder dat je er een echte foto
@@ -48,11 +48,16 @@ export function StorageCheck() {
       </button>
 
       {result?.ok && (
-        <p className="mt-3 text-sm text-success">
-          {result.mode === "blob"
-            ? t("settings.storageOkBlob")
-            : t("settings.storageOkLocal")}
-        </p>
+        <div className="mt-3">
+          <p className="text-sm text-success">
+            {result.mode === "blob"
+              ? t("settings.storageOkBlob")
+              : t("settings.storageOkLocal")}
+          </p>
+          {result.detail && (
+            <p className="mt-1 break-words text-xs text-subtle">{result.detail}</p>
+          )}
+        </div>
       )}
 
       {result && !result.ok && (

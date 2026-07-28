@@ -41,7 +41,7 @@
   "error.handle-too-short": "Use at least 3 characters.",
   "error.handle-invalid": "Use only letters, numbers and dashes.",
   "error.invalid-url": "That's not a valid link.",
-  "error.storage-unconfigured": "Saving photos isn't set up on this server yet. Set BLOB_READ_WRITE_TOKEN in the settings (see the README).",
+  "error.storage-unconfigured": "This deployment doesn't see any photo storage. In Vercel, go to Storage, open your Blob store, click 'Connect Project' and pick gift-app with all three environments ticked. Then hit Redeploy under Deployments — a connected store only takes effect after a new deploy.",
   "error.image-too-large": "That photo is too large and couldn't be shrunk. Try one from your photo library, or make a smaller version yourself.",
   "error.storage-failed": "Storage didn't respond. Please try again in a moment.",
   "error.storage-token-invalid": "The photo storage key isn't being accepted. Reconnect Blob to the project in Vercel (Storage › Connect Project) and redeploy afterwards.",
