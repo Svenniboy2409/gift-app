@@ -142,6 +142,13 @@ Kies je bij het koppelen een eigen voorvoegsel, dan heet de variabele
 bijvoorbeeld `FOTOS_READ_WRITE_TOKEN`. Dat mag: de app zoekt zelf naar elke
 variabele op `_READ_WRITE_TOKEN` met een Blob-sleutel erin.
 
+Of je store nu op **openbaar** of op **besloten** staat maakt ook niet uit. Bij
+een openbare store krijgen foto's een adres bij Vercel; bij een besloten store
+zijn die adressen niet op te vragen, en lopen ze via `/api/photo/…` op je eigen
+domein — dat haalt het bestand op met jouw sleutel en zet er een eeuwige
+cachekop op, zodat het CDN het daarna zelf afhandelt. De app merkt bij de eerste
+upload welke van de twee het is en onthoudt dat.
+
 Onder **Instellingen → Foto-opslag** in de app zelf zit een knop **Opslag
 testen**. Die zet een testbestandje neer, ruimt het weer op, en zegt of het
 werkte — inclusief de naam van de variabele die hij gebruikte. Handig om te

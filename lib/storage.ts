@@ -77,6 +77,32 @@ function onVercel() {
   return Boolean(process.env.VERCEL || process.env.VERCEL_ENV);
 }
 
+/**
+ * Een Blob-store staat op openbaar óf op besloten; dat kies je bij het
+ * aanmaken en het geldt voor de hele store. Wij weten niet welke van de twee we
+ * voor ons hebben, dus we proberen het openbaar en onthouden wat de store
+ * ervan zei. Bij een besloten store lopen de foto's daarna via onze eigen
+ * route, want dan zijn de blob-adressen zelf niet op te vragen.
+ */
+type Access = "public" | "private";
+let knownAccess: Access | null = null;
+
+function otherAccess(message: string, tried: Access): Access | null {
+  const mismatch = /Cannot use (public|private) access on a (private|public) store/i.exec(
+    message,
+  );
+  if (!mismatch) return null;
+  return tried === "public" ? "private" : "public";
+}
+
+/** Het pad waarop een besloten foto bij ons op te halen is. */
+export function photoPath(pathname: string) {
+  return `/api/photo/${pathname}`;
+}
+
+/** Alleen onze eigen bestandsnamen mag de fotoroute ophalen. */
+export const PHOTO_PATHNAME = /^gifts\/[a-f0-9]{24}\.(jpg|png|webp|gif|avif)$/;
+
 /** Een geldige PNG van 1×1, voor de zelftest hieronder. */
 const PIXEL = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -92,10 +118,15 @@ export async function checkStorage() {
   const token = blobToken();
   const url = await storeImage(new Uint8Array(PIXEL), "image/png");
 
-  if (token && url.startsWith("http")) {
+  if (token) {
     try {
       const { del } = await import("@vercel/blob");
-      await del(url, { token: token.value });
+      // Bij een besloten store is de teruggegeven link ons eigen adres; del()
+      // wil dan het pad binnen de store hebben.
+      const target = url.startsWith("/api/photo/")
+        ? url.slice("/api/photo/".length)
+        : url;
+      await del(target, { token: token.value });
     } catch {
       // Een achtergebleven testbestandje van 70 bytes is geen probleem.
     }
@@ -104,7 +135,9 @@ export async function checkStorage() {
   return {
     mode: token ? ("blob" as const) : ("filesystem" as const),
     // Alleen de naam van de variabele, nooit de waarde.
-    tokenName: token?.name ?? null,
+    tokenName: token
+      ? `${token.name}${knownAccess === "private" ? " (besloten store)" : ""}`
+      : null,
   };
 }
 
@@ -124,13 +157,29 @@ export async function storeImage(
   const token = blobToken();
   if (token) {
     const { put } = await import("@vercel/blob");
-    try {
-      const blob = await put(`gifts/${name}`, Buffer.from(bytes), {
-        access: "public",
+    const pathname = `gifts/${name}`;
+
+    const upload = async (access: Access) =>
+      put(pathname, Buffer.from(bytes), {
+        access,
         contentType,
         token: token.value,
       });
-      return blob.url;
+
+    try {
+      let access = knownAccess ?? "public";
+      let blob;
+      try {
+        blob = await upload(access);
+      } catch (error) {
+        const fallback = otherAccess((error as Error).message ?? "", access);
+        if (!fallback) throw error;
+        access = fallback;
+        blob = await upload(access);
+      }
+
+      knownAccess = access;
+      return access === "public" ? blob.url : photoPath(pathname);
     } catch (error) {
       const message = (error as Error).message ?? "";
       throw new StorageError(blobErrorCode(message), message.slice(0, 300));
