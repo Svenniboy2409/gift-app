@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openGiftSheet } from "./helpers";
 
 /**
  * Volledige doorloop: account maken → lijst maken → link plakken → cadeau
@@ -58,7 +59,7 @@ test("van link plakken tot claimen, zonder de verrassing te verklappen", async (
   await expect(owner.getByRole("heading", { name: "Mijn lijsten" })).toBeVisible();
 
   // --- Lijst maken ---------------------------------------------------------
-  await owner.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await owner.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await owner.getByLabel("Naam van de lijst").fill("Mijn verjaardag");
   await owner
     .getByLabel("Omschrijving")
@@ -72,6 +73,7 @@ test("van link plakken tot claimen, zonder de verrassing te verklappen", async (
   ).toBeVisible();
 
   // --- Link plakken: alles wordt automatisch ingevuld ----------------------
+  await openGiftSheet(owner);
   await owner
     .getByPlaceholder("Plak hier een link naar een product…")
     .fill("https://www.bol.com/nl/p/espressomachine/9200000123456789/");
@@ -166,7 +168,7 @@ test("een privélijst is niet te openen via de deel-link", async ({ browser }) =
   await page.getByRole("button", { name: "Account maken" }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Geheime lijst");
   await page.getByText("Alleen ik", { exact: true }).click();
   await page.getByRole("button", { name: "Lijst maken" }).click();

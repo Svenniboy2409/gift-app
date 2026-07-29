@@ -1,17 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/client";
+import { useSheets } from "@/components/sheets";
 
 /**
  * De navigatiebalk onderaan, zoals in een echte app.
  *
  * Alleen op telefoonformaat: op een breder scherm is de balk bovenaan
  * prettiger, want daar staat je hand niet onderaan het scherm. De knop in het
- * midden doet wat op die plek het meest voor de hand ligt — sta je in een
- * lijst, dan is dat een cadeau toevoegen; sta je ergens anders, dan een nieuwe
- * lijst maken.
+ * midden opent het toevoegscherm, dat van onderen omhoog schuift.
  */
 
 function ListsIcon({ active }: { active: boolean }) {
@@ -83,24 +82,10 @@ function PlusIcon() {
 export function BottomNav() {
   const { t } = useI18n();
   const pathname = usePathname();
-  const router = useRouter();
+  const { openGift } = useSheets();
 
   const onLists = pathname === "/dashboard" || pathname.startsWith("/lists");
   const onSettings = pathname.startsWith("/settings");
-
-  // Binnen een bestaande lijst voegt de plusknop een cadeau toe: hij brengt de
-  // plakbalk in beeld en zet de cursor er meteen in.
-  const inList = /^\/lists\/(?!new$)[^/]+$/.test(pathname);
-
-  function add() {
-    if (!inList) {
-      router.push("/lists/new");
-      return;
-    }
-    const input = document.getElementById("paste-url");
-    input?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (input as HTMLInputElement | null)?.focus({ preventScroll: true });
-  }
 
   return (
     <nav className="tabbar md:hidden" aria-label={t("nav.main")}>
@@ -116,9 +101,9 @@ export function BottomNav() {
       <div className="flex flex-1 justify-center">
         <button
           type="button"
-          onClick={add}
+          onClick={openGift}
           className="tabbar-action"
-          aria-label={inList ? t("gift.addTitle") : t("dashboard.newList")}
+          aria-label={t("gift.addTitle")}
         >
           <PlusIcon />
         </button>

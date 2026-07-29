@@ -32,7 +32,7 @@ test("de bewaarknop leest een productpagina uit en vult het formulier", async ({
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
 
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Mijn verlanglijst");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
@@ -115,7 +115,7 @@ test("uitgelogd kom je na inloggen terug bij het bewaarscherm", async ({
   await first.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await first.getByRole("button", { name: "Account maken" }).click();
   await first.waitForURL(/\/dashboard$/);
-  await first.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await first.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await first.getByLabel("Naam van de lijst").fill("Kerst");
   await first.getByRole("button", { name: "Lijst maken" }).click();
   await first.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
@@ -302,7 +302,7 @@ test("op het bewaarscherm kun je een andere foto aanwijzen", async ({ page }) =>
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Games");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
@@ -334,7 +334,7 @@ test("noteert de winkelnaam bij een cadeau uit de bewaarknop", async ({ page }) 
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Techniek");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);

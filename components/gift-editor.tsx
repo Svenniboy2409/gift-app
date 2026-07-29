@@ -43,14 +43,14 @@ export function centsToInput(cents: number | null, locale: string) {
   return locale === "nl" ? value.replace(".", ",") : value;
 }
 
-function SubmitButton() {
+function SubmitButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
   const { t } = useI18n();
   return (
     <button
       type="submit"
       className="btn btn-primary w-full sm:w-auto"
-      disabled={pending}
+      disabled={pending || disabled}
     >
       {pending ? t("common.loading") : t("gift.save")}
     </button>
@@ -70,6 +70,7 @@ export function GiftEditor({
   children,
   cancelLabel,
   imageChoices,
+  disabled,
 }: {
   draft: GiftDraft;
   action: (state: FormState, formData: FormData) => Promise<FormState>;
@@ -81,6 +82,8 @@ export function GiftEditor({
   cancelLabel?: string;
   /** Andere foto's van de pagina, om er zelf een uit te kiezen. */
   imageChoices?: string[];
+  /** Opslaan blokkeren, bijvoorbeeld zolang er geen lijst gekozen is. */
+  disabled?: boolean;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
@@ -384,7 +387,7 @@ export function GiftEditor({
       )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
-        <SubmitButton />
+        <SubmitButton disabled={disabled} />
         <button
           type="button"
           className="btn btn-ghost w-full sm:w-auto"

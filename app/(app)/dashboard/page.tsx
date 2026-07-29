@@ -1,7 +1,11 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getListsForOwner } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
+import {
+  NewListButton,
+  NewListCard,
+  NewListIconButton,
+} from "@/components/add-buttons";
 import { ListCard } from "@/components/list-card";
 
 export default async function DashboardPage() {
@@ -13,7 +17,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {t("dashboard.title")}
@@ -22,19 +26,12 @@ export default async function DashboardPage() {
             {t("dashboard.subtitle")}
           </p>
         </div>
-        {/* Op de telefoon zit deze knop al in de balk onderaan. */}
-        <Link href="/lists/new" className="btn btn-primary hidden md:inline-flex">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="size-4"
-          >
-            <path strokeLinecap="round" d="M12 5v14M5 12h14" />
-          </svg>
-          {t("dashboard.newList")}
-        </Link>
+
+        {/* De plusknop onderaan voegt een cadeau toe, dus een nieuwe lijst
+            maak je hier: een plusje naast de kop, en onderaan de rij nog een
+            keer als gestippeld vak. */}
+        <NewListIconButton />
+        <NewListButton className="hidden md:inline-flex" />
       </div>
 
       {lists.length === 0 ? (
@@ -60,9 +57,7 @@ export default async function DashboardPage() {
           <p className="mt-1.5 max-w-sm text-sm text-muted">
             {t("dashboard.empty.body")}
           </p>
-          <Link href="/lists/new" className="btn btn-primary mt-6">
-            {t("dashboard.newList")}
-          </Link>
+          <NewListButton className="mt-6" />
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
@@ -84,6 +79,7 @@ export default async function DashboardPage() {
               }}
             />
           ))}
+          <NewListCard />
         </div>
       )}
     </>

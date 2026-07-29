@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { isConfigured } from "@/lib/config";
+import { getListsForOwner } from "@/lib/lists";
 import { BottomNav } from "@/components/bottom-nav";
+import { SheetsProvider } from "@/components/sheets";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
 
 export default async function AppLayout({
@@ -15,8 +17,14 @@ export default async function AppLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  // De schuifpanelen zitten in de layout, zodat je vanaf elke pagina een cadeau
+  // of een lijst kunt toevoegen. Daarvoor moeten de lijsten hier al bekend zijn.
+  const lists = await getListsForOwner(user.id);
+
   return (
-    <>
+    <SheetsProvider
+      lists={lists.map((list) => ({ id: list.id, title: list.title }))}
+    >
       <SiteHeader />
       {/* De ruimte onderaan houdt de laatste knop vrij van de navigatiebalk,
           inclusief de streep van de iPhone. Vanaf md verdwijnt de balk en is
@@ -30,6 +38,6 @@ export default async function AppLayout({
         <SiteFooter />
       </div>
       <BottomNav />
-    </>
+    </SheetsProvider>
   );
 }

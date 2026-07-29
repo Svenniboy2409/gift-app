@@ -1,25 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createList, openGiftSheet, register } from "./helpers";
 
 /**
- * De app op telefoonformaat: navigatiebalk onderaan, niets dat buiten het
- * scherm valt, en geen knop die onder die balk verdwijnt.
+ * De app op telefoonformaat: navigatiebalk onderaan, het schuifpaneel om iets
+ * toe te voegen, niets dat buiten het scherm valt, en geen knop die onder die
+ * balk verdwijnt.
  */
-
-async function signUp(page: Page, naam: string) {
-  await page.goto("/register");
-  await page.getByLabel("Naam").fill(naam);
-  await page.getByLabel("E-mailadres").fill(`mob-${Date.now()}@example.com`);
-  await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
-  await page.getByRole("button", { name: "Account maken" }).click();
-  await page.waitForURL(/\/dashboard$/);
-}
-
-async function makeList(page: Page, titel: string) {
-  await page.goto("/lists/new");
-  await page.getByLabel("Naam van de lijst").fill(titel);
-  await page.getByRole("button", { name: "Lijst maken" }).click();
-  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
-}
 
 /** Steekt er iets buiten het scherm uit? Dan kun je zijwaarts schuiven. */
 async function scrollsSideways(page: Page) {
@@ -31,7 +17,7 @@ async function scrollsSideways(page: Page) {
 test("de navigatiebalk staat onderaan en brengt je naar beide tabbladen", async ({
   page,
 }) => {
-  await signUp(page, "Mobiel");
+  await register(page, "Mobiel", "mob");
 
   const balk = page.getByRole("navigation", { name: "Hoofdnavigatie" });
   await expect(balk).toBeVisible();
@@ -53,27 +39,99 @@ test("de navigatiebalk staat onderaan en brengt je naar beide tabbladen", async 
   await page.waitForURL(/\/dashboard$/);
 });
 
-test("de plusknop maakt een lijst, en binnen een lijst een cadeau", async ({
+test("de plusknop opent het toevoegscherm met de lijst waar je in zit", async ({
   page,
 }) => {
-  await signUp(page, "Plusknop");
+  await register(page, "Paneel", "mob2");
+  await createList(page, "Verjaardag");
+  await page.goto("/dashboard");
+  await createList(page, "Kerst");
 
-  // Op het overzicht: een nieuwe lijst.
-  await page.locator(".tabbar-action").click();
-  await page.waitForURL(/\/lists\/new$/);
-  await page.getByLabel("Naam van de lijst").fill("Sinterklaas");
-  await page.getByRole("button", { name: "Lijst maken" }).click();
+  // We staan nu in Kerst; die hoort al aangevinkt te staan.
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  await expect(paneel.getByRole("button", { name: "Kerst" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(
+    paneel.getByRole("button", { name: "Verjaardag" }),
+  ).toHaveAttribute("aria-pressed", "false");
+
+  // En de link staat in hetzelfde paneel, niet meer op de pagina erachter.
+  await expect(
+    paneel.getByPlaceholder("Plak hier een link naar een product…"),
+  ).toBeVisible();
+});
+
+test("een cadeau kan in twee lijsten tegelijk", async ({ page }) => {
+  await register(page, "Twee lijsten", "mob3");
+  await createList(page, "Verjaardag");
+  await page.goto("/dashboard");
+  await createList(page, "Kerst");
+
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  await paneel.getByRole("button", { name: "Verjaardag" }).click();
+  await paneel.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await paneel.getByLabel("Naam", { exact: true }).fill("Espressomachine");
+  await paneel.getByRole("button", { name: "Cadeau opslaan" }).click();
+
+  // In de lijst waar we stonden staat hij meteen.
+  await expect(
+    page.locator("li").filter({ hasText: "Espressomachine" }),
+  ).toBeVisible();
+
+  // En in de andere lijst ook.
+  await page.goto("/dashboard");
+  await page.getByText("Verjaardag", { exact: true }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+  await expect(
+    page.locator("li").filter({ hasText: "Espressomachine" }),
+  ).toBeVisible();
+});
 
-  // In een lijst: de plakbalk in beeld, met de cursor er meteen in.
-  await page.locator(".tabbar-action").click();
-  await expect(page.locator("#paste-url")).toBeFocused();
+test("zonder gekozen lijst kun je niet opslaan", async ({ page }) => {
+  await register(page, "Geen lijst", "mob4");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+
+  // De lijst waar we in staan uitvinken laat niets over om in op te slaan.
+  await paneel.getByRole("button", { name: "Verjaardag" }).click();
+  await expect(paneel.getByText("Kies minstens één lijst.")).toBeVisible();
+
+  await paneel.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await paneel.getByLabel("Naam", { exact: true }).fill("Iets");
+  await expect(
+    paneel.getByRole("button", { name: "Cadeau opslaan" }),
+  ).toBeDisabled();
+});
+
+test("een nieuwe lijst maak je via het plusje bij de kop", async ({ page }) => {
+  await register(page, "Lijstmaker", "mob5");
+
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
+  const paneel = page.getByRole("dialog");
+  await expect(paneel).toBeVisible();
+
+  await paneel.getByLabel("Naam van de lijst").fill("Sinterklaas");
+  await paneel.getByRole("button", { name: "Lijst maken" }).click();
+
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+  await expect(
+    page.getByRole("heading", { name: "Sinterklaas" }),
+  ).toBeVisible();
+
+  // Het paneel hoort dicht te zijn zodra je ergens anders bent.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("de knop onderaan een formulier valt niet achter de navigatiebalk", async ({
   page,
 }) => {
-  await signUp(page, "Knoppen");
+  await register(page, "Knoppen", "mob6");
   await page.goto("/lists/new");
 
   // Helemaal naar beneden: daar staat de laatste knop van het formulier.
@@ -88,15 +146,17 @@ test("de knop onderaan een formulier valt niet achter de navigatiebalk", async (
 });
 
 test("geen enkele pagina schuift zijwaarts weg", async ({ page }) => {
-  await signUp(page, "Breedte");
-  await makeList(page, "Verjaardag met een behoorlijk lange naam erbij");
+  await register(page, "Breedte", "mob7");
+  await createList(page, "Verjaardag met een behoorlijk lange naam erbij");
 
-  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
-  await page
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  await paneel.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await paneel
     .getByLabel("Naam", { exact: true })
     .fill("Draadloze koptelefoon met actieve ruisonderdrukking en etui");
-  await page.getByRole("button", { name: "Cadeau opslaan" }).click();
-  await page.waitForTimeout(800);
+  await paneel.getByRole("button", { name: "Cadeau opslaan" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
   const deelLink = await page.locator('input[readonly]').inputValue();
 
@@ -113,7 +173,7 @@ test("geen enkele pagina schuift zijwaarts weg", async ({ page }) => {
 });
 
 test("uitloggen kan vanuit de instellingen", async ({ page }) => {
-  await signUp(page, "Uitlogger");
+  await register(page, "Uitlogger", "mob8");
 
   // Op de telefoon staat er geen uitlogknop in de balk bovenaan; die hoort
   // dus in de instellingen te staan, anders kom je er niet meer uit.

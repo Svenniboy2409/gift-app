@@ -57,28 +57,38 @@ export async function createGiftAction(
 }
 
 /**
- * Zelfde als createGiftAction, maar met de lijst als veld in het formulier in
- * plaats van vooraf vastgezet. Voor de bewaarknop, waar je de lijst pas kiest
- * op het moment dat je het cadeau opslaat.
+ * Zelfde als createGiftAction, maar met de lijst(en) als veld in het formulier
+ * in plaats van vooraf vastgezet. Voor het toevoegscherm en de bewaarknop,
+ * waar je pas bij het opslaan kiest waar het cadeau heen gaat.
+ *
+ * Meerdere lijsten mag: hetzelfde cadeau komt dan in elk ervan te staan, als
+ * een eigen exemplaar. Handig voor iets wat op je verjaardagslijst én je
+ * kerstlijst thuishoort.
  */
 export async function createGiftInListAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
   const user = await requireUser();
-  const listId = String(formData.get("listId") ?? "");
-  if (!listId) return { error: "required" };
+  const listIds = formData
+    .getAll("listId")
+    .map((value) => String(value))
+    .filter(Boolean);
+  if (listIds.length === 0) return { error: "required" };
 
   const parsed = readGiftForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "invalid" };
   }
 
-  // createGift controleert zelf of de lijst van deze gebruiker is.
-  const gift = await createGift(user.id, listId, toGiftInput(parsed.data));
-  if (!gift) return { error: "generic" };
+  const input = toGiftInput(parsed.data);
+  for (const listId of listIds) {
+    // createGift controleert zelf of de lijst van deze gebruiker is.
+    const gift = await createGift(user.id, listId, input);
+    if (!gift) return { error: "generic" };
+    revalidatePath(`/lists/${listId}`);
+  }
 
-  revalidatePath(`/lists/${listId}`);
   revalidatePath("/dashboard");
   return { success: "saved" };
 }

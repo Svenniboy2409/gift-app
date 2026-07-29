@@ -2,18 +2,16 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import type { ScrapeResponse } from "@/app/api/scrape/route";
+import { useCallback, useState, useTransition } from "react";
 import {
-  createGiftAction,
   deleteGiftAction,
   moveGiftAction,
   updateGiftAction,
 } from "@/lib/actions/gifts";
 import { formatPrice } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/client";
+import { AddGiftButton } from "@/components/add-buttons";
 import {
-  EMPTY_DRAFT,
   GiftEditor,
   centsToInput,
   type GiftDraft,
@@ -35,19 +33,7 @@ export type OwnerGift = {
 
 type Editing =
   | { mode: "closed" }
-  | { mode: "new"; draft: GiftDraft; notice: string | null }
   | { mode: "edit"; giftId: string; draft: GiftDraft };
-
-function LinkIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="size-4 shrink-0">
-      <path
-        strokeLinecap="round"
-        d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"
-      />
-    </svg>
-  );
-}
 
 function ShopIcon() {
   return (
@@ -84,103 +70,6 @@ function TrashIcon() {
         d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
       />
     </svg>
-  );
-}
-
-/** De plakbalk bovenaan: link erin, gegevens eruit. */
-function PasteBar({
-  onResult,
-  onManual,
-  busy,
-  setBusy,
-}: {
-  onResult: (result: ScrapeResponse) => void;
-  onManual: () => void;
-  busy: boolean;
-  setBusy: (value: boolean) => void;
-}) {
-  const { t } = useI18n();
-  const [url, setUrl] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  async function fetchProduct(event: React.FormEvent) {
-    event.preventDefault();
-    const value = url.trim();
-    if (!value || busy) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/api/scrape", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: value }),
-      });
-
-      if (response.status === 400) {
-        setError(t("scrape.invalidUrl"));
-        return;
-      }
-      if (!response.ok) {
-        setError(t("error.generic"));
-        return;
-      }
-
-      const data = (await response.json()) as ScrapeResponse;
-      onResult(data);
-      setUrl("");
-    } catch {
-      setError(t("error.generic"));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="card bg-sunken p-4 sm:p-5">
-      <form onSubmit={fetchProduct} className="flex flex-col gap-2.5 sm:flex-row">
-        <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-subtle">
-            <LinkIcon />
-          </span>
-          <input
-            id="paste-url"
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            className="field pl-10"
-            type="text"
-            inputMode="url"
-            placeholder={t("gift.pastePlaceholder")}
-            aria-label={t("gift.pastePlaceholder")}
-            disabled={busy}
-          />
-        </div>
-        <button
-          type="submit"
-          className="btn btn-primary w-full sm:w-auto"
-          disabled={busy || !url.trim()}
-        >
-          {busy ? t("gift.fetching") : t("gift.fetch")}
-        </button>
-      </form>
-
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
-
-      <button type="button" className="btn btn-ghost btn-sm mt-2 -ml-2" onClick={onManual}>
-        {t("gift.manual")}
-      </button>
-
-      {busy && (
-        <div className="mt-4 flex gap-4 rounded-xl bg-raised p-4">
-          <div className="skeleton size-20 shrink-0 rounded-lg" />
-          <div className="flex-1 space-y-2 py-1">
-            <div className="skeleton h-4 w-3/4" />
-            <div className="skeleton h-3 w-1/2" />
-            <div className="skeleton h-5 w-20" />
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -341,16 +230,6 @@ export function GiftManager({
   const { t, locale } = useI18n();
   const router = useRouter();
   const [editing, setEditing] = useState<Editing>({ mode: "closed" });
-  const [busy, setBusy] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
-
-  // Na het ophalen staat het ingevulde formulier onder de plakbalk; breng het
-  // in beeld zodat je meteen ziet wat er gevonden is.
-  useEffect(() => {
-    if (editing.mode === "new") {
-      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [editing.mode]);
 
   const close = useCallback(() => setEditing({ mode: "closed" }), []);
   const done = useCallback(() => {
@@ -358,72 +237,21 @@ export function GiftManager({
     router.refresh();
   }, [router]);
 
-  function handleScrapeResult(result: ScrapeResponse) {
-    const product = result.product;
-
-    // Werd de shop geblokkeerd, dan hebben we hooguit uit de link kunnen
-    // afleiden hoe het product heet. Zeg dat dan ook, in plaats van de
-    // algemene "niet alles gelukt"-melding.
-    const blocked = result.reason === "blocked";
-    const notice =
-      result.quality === "failed"
-        ? t(blocked ? "scrape.blocked" : "scrape.failed")
-        : result.reason === "archived"
-          ? t("scrape.archived")
-          : blocked
-            ? t("scrape.blockedPartial", {
-                shop: product.merchant ?? t("scrape.thisShop"),
-              })
-            : result.quality === "partial"
-              ? t("scrape.partial")
-              : null;
-
-    setEditing({
-      mode: "new",
-      notice,
-      draft: {
-        ...EMPTY_DRAFT,
-        title: product.title ?? "",
-        description: product.description ?? "",
-        price: centsToInput(product.priceCents, locale),
-        currency: product.currency || "EUR",
-        url: product.url,
-        merchant: product.merchant ?? "",
-        imageUrl: product.imageUrl ?? "",
-      },
-    });
-  }
-
   return (
-    <div className="space-y-5">
-      <PasteBar
-        busy={busy}
-        setBusy={setBusy}
-        onResult={handleScrapeResult}
-        onManual={() =>
-          setEditing({ mode: "new", draft: EMPTY_DRAFT, notice: null })
-        }
-      />
-
-      {editing.mode === "new" && (
-        <div ref={editorRef} className="card scroll-mt-20 p-5">
-          <h2 className="mb-4 font-semibold text-ink">{t("gift.addTitle")}</h2>
-          <GiftEditor
-            draft={editing.draft}
-            notice={editing.notice}
-            action={createGiftAction.bind(null, listId)}
-            onDone={done}
-            onCancel={close}
-          />
-        </div>
-      )}
+    <div className="space-y-4">
+      {/* Toevoegen gaat via het schuifpaneel. Op de telefoon zit die knop in
+          de balk onderaan; op een breed scherm hoort hij hier. */}
+      <div className="hidden justify-end md:flex">
+        <AddGiftButton />
+      </div>
 
       {gifts.length === 0 ? (
-        <div className="card px-6 py-14 text-center">
+        <div className="card flex flex-col items-center px-6 py-12 text-center sm:py-14">
           <h2 className="font-semibold text-ink">{t("gift.empty.title")}</h2>
-          <p className="mx-auto mt-1.5 max-w-sm text-sm text-muted">
+          <p className="mt-1.5 max-w-sm text-sm text-muted">
             {t("gift.empty.body")}
           </p>
+          <AddGiftButton className="mt-6" />
         </div>
       ) : (
         <ul className="space-y-3">

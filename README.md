@@ -372,9 +372,15 @@ De meeste mensen voegen cadeaus toe vanaf hun telefoon, dus daar is de opmaak
 op gebouwd; het bureaublad krijgt vanaf `md` de bredere variant.
 
 - **Navigatiebalk onderaan** (`components/bottom-nav.tsx`) met Lijsten,
-  Instellingen en een knop in het midden die doet wat op die plek voor de hand
-  ligt: in een lijst een cadeau toevoegen, daarbuiten een nieuwe lijst. Op een
-  breed scherm verdwijnt de balk en staat alles weer bovenin.
+  Instellingen en een knop in het midden. Op een breed scherm verdwijnt de balk
+  en staat alles weer bovenin.
+- **Schuifpanelen** (`components/sheet.tsx`, `components/sheets.tsx`) voor
+  toevoegen. De plusknop opent een paneel dat omhoog schuift: bovenaan kies je
+  in welke lijst(en) het cadeau komt — de lijst waar je in staat is al
+  aangevinkt — daaronder plak je de link of vul je het zelf in. Een nieuwe lijst
+  maken gaat via hetzelfde soort paneel, te openen met het plusje naast "Mijn
+  lijsten" of het gestippelde vak onderaan de rij. Op een breed scherm staat het
+  paneel gecentreerd in beeld in plaats van tegen de onderrand.
 - **Veilige zones**: `viewport-fit=cover` plus `env(safe-area-inset-*)`, zodat
   niets onder de inkeping of de streep van de iPhone verdwijnt.
 - **Invoervelden op 16 px.** Onder die grens zoomt Safari op iPhone het scherm

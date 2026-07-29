@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openManualGiftForm } from "./helpers";
 
 /**
  * De uploadknop van begin tot eind: bestand kiezen, opslaan, en controleren dat
@@ -24,12 +25,12 @@ test("een eigen foto uploaden en terugzien bij het cadeau", async ({ page }) => 
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
 
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Zelfgemaakt");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
 
-  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await openManualGiftForm(page);
   await page.getByLabel("Naam", { exact: true }).fill("Zelfgemaakte taart");
 
   // Het bestandsveld zit verstopt achter de knop "Eigen foto kiezen".
@@ -62,12 +63,12 @@ test("een grote telefoonfoto wordt verkleind in plaats van geweigerd", async ({
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Grote fotos");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
 
-  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await openManualGiftForm(page);
   await page.getByLabel("Naam", { exact: true }).fill("Grote foto");
 
   // Een echte foto van 3000x3000 met ruis, zodat hij niet weg te comprimeren
@@ -148,12 +149,12 @@ test("een HEIC die niet omgezet kan worden krijgt een eigen uitleg", async ({
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Heic");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
 
-  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await openManualGiftForm(page);
 
   // Een HEIC-kop: precies wat een iPhone uit de galerij meestuurt. Chromium
   // kan dat niet lezen, dus hij komt ongewijzigd bij de server aan — en daar
@@ -179,12 +180,12 @@ test("een onleesbaar bestand wordt geweigerd met uitleg", async ({ page }) => {
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.getByRole("link", { name: "Nieuwe lijst" }).first().click();
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Test");
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
 
-  await page.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await openManualGiftForm(page);
 
   // Geen leesbare afbeelding: de browser kan hem dus niet verkleinen, en dan
   // moet het vangnet op de server hem weigeren met een begrijpelijke melding.
