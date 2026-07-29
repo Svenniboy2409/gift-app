@@ -4,10 +4,7 @@ import { getListForVisitor } from "@/lib/gifts";
 import { readClaimerName, readClaimerToken } from "@/lib/claims";
 import { getTranslator } from "@/lib/i18n/server";
 import { daysUntil, formatDate } from "@/lib/i18n";
-import { SiteFooter } from "@/components/site-header";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme";
-import { Logo } from "@/components/logo";
+import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { VisitorGiftCard } from "@/components/visitor-gift-card";
 
 export async function generateMetadata({
@@ -57,26 +54,16 @@ export default async function SharedListPage({
 
   return (
     <>
-      <header className="border-b border-line">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
-          <span className="flex items-center gap-2 font-semibold tracking-tight text-ink">
-            <Logo />
-            {t("app.name")}
-          </span>
-          <div className="flex-1" />
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-      </header>
+      <PlainHeader />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-        <div className={`cover-${list.coverColor} relative overflow-hidden rounded-2xl p-6 sm:p-10`}>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12">
+        <div className={`cover-${list.coverColor} relative overflow-hidden rounded-2xl p-5 sm:p-10`}>
           <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
           <div className="relative">
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d]">
               {t(`occasion.${list.occasion}` as "occasion.OTHER")}
             </span>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl">
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl">
               {list.title}
             </h1>
             <p className="mt-2 text-white/90">
@@ -107,7 +94,7 @@ export default async function SharedListPage({
             <h2 className="font-semibold text-ink">{t("gift.empty.title")}</h2>
           </div>
         ) : (
-          <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {list.gifts.map((gift) => (
               <VisitorGiftCard
                 key={gift.id}

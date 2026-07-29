@@ -28,17 +28,17 @@ export default async function HomePage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 sm:px-6">
-        <section className="py-16 text-center sm:py-24">
+        <section className="py-12 text-center sm:py-24">
           <p className="chip mx-auto mb-6 bg-accent-soft text-accent">
             {t("app.tagline")}
           </p>
-          <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight text-ink sm:text-6xl">
+          <h1 className="mx-auto max-w-3xl text-3xl font-bold leading-[1.15] tracking-tight text-ink sm:text-6xl">
             {t("landing.title")}
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted">
+          <p className="mx-auto mt-5 max-w-2xl leading-relaxed text-muted sm:mt-6 sm:text-lg">
             {t("landing.subtitle")}
           </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Link href="/register" className="btn btn-primary px-6 py-3 text-base">
               {t("landing.cta")}
             </Link>
@@ -49,7 +49,7 @@ export default async function HomePage() {
         </section>
 
         {/* Voorbeeldkaart: laat meteen zien hoe het toevoegen eruitziet. */}
-        <section className="pb-16">
+        <section className="pb-14 sm:pb-16">
           <div className="card mx-auto max-w-2xl overflow-hidden p-1.5 shadow-soft-lg">
             <div className="rounded-xl bg-sunken p-4 sm:p-6">
               <div className="flex items-center gap-2 rounded-xl border border-line-strong bg-raised px-4 py-3 text-sm text-subtle">
@@ -83,7 +83,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="grid gap-5 pb-16 sm:grid-cols-3">
+        <section className="grid gap-4 pb-14 sm:grid-cols-3 sm:gap-5 sm:pb-16">
           {steps.map((step) => (
             <div key={step.key} className="card card-hover p-6">
               <span className="flex size-9 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent">
@@ -99,7 +99,7 @@ export default async function HomePage() {
           ))}
         </section>
 
-        <section className="mb-20 rounded-2xl bg-sunken p-8 text-center sm:p-12">
+        <section className="mb-16 rounded-2xl bg-sunken p-6 text-center sm:mb-20 sm:p-12">
           <h2 className="text-2xl font-semibold tracking-tight text-ink">
             {t("landing.surprise.title")}
           </h2>

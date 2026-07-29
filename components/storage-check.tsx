@@ -34,13 +34,13 @@ export function StorageCheck() {
   }
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       <h2 className="font-semibold text-ink">{t("settings.storage")}</h2>
       <p className="mt-1 text-sm text-muted">{t("settings.storageBody")}</p>
 
       <button
         type="button"
-        className="btn btn-secondary mt-4"
+        className="btn btn-secondary mt-4 w-full sm:w-auto"
         onClick={run}
         disabled={busy}
       >

@@ -14,7 +14,7 @@ export default async function AuthLayout({
   return (
     <>
       <SiteHeader />
-      <main className="flex flex-1 items-center justify-center px-4 py-14 sm:px-6">
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-14">
         {children}
       </main>
       <SiteFooter />

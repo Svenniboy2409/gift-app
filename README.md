@@ -366,6 +366,30 @@ Dit zit in de datalaag, niet alleen in de UI (`lib/gifts.ts`):
 De end-to-end test controleert dit expliciet: na een claim mag de naam van de
 koper nergens in de HTML van de eigenaar voorkomen.
 
+## Opmaak: gemaakt voor de telefoon
+
+De meeste mensen voegen cadeaus toe vanaf hun telefoon, dus daar is de opmaak
+op gebouwd; het bureaublad krijgt vanaf `md` de bredere variant.
+
+- **Navigatiebalk onderaan** (`components/bottom-nav.tsx`) met Lijsten,
+  Instellingen en een knop in het midden die doet wat op die plek voor de hand
+  ligt: in een lijst een cadeau toevoegen, daarbuiten een nieuwe lijst. Op een
+  breed scherm verdwijnt de balk en staat alles weer bovenin.
+- **Veilige zones**: `viewport-fit=cover` plus `env(safe-area-inset-*)`, zodat
+  niets onder de inkeping of de streep van de iPhone verdwijnt.
+- **Invoervelden op 16 px.** Onder die grens zoomt Safari op iPhone het scherm
+  in zodra je een veld aantikt. Vanaf `sm` mag het weer compacter.
+- **Raakdoelen van minstens 44 px** via `@media (pointer: coarse)`, en
+  zweefeffecten alleen op schermen met een muis — op een touchscreen blijft zo'n
+  effect na het tikken hangen.
+- **Delen via het deelvenster van de telefoon** (`navigator.share`), met
+  kopiëren naar het klembord als terugval.
+- **Op je beginscherm te zetten**: `app/manifest.ts` en de iconen in `public/`
+  laten de app starten zonder adresbalk, met een eigen icoon.
+
+Op telefoonformaat staat de uitlogknop in de instellingen in plaats van in de
+balk bovenaan — anders kom je er niet meer uit.
+
 ## Tests
 
 ```bash
@@ -373,6 +397,11 @@ npm test          # unit tests (prijzen, extractie, rommelfilter, SSRF-blokkade)
 npm run typecheck # TypeScript
 npm run test:e2e  # Playwright: de volledige doorloop plus de bewaarknop
 ```
+
+De e2e-tests draaien in twee smaken: `chromium` op bureaubladformaat en
+`mobiel` op de maat van een iPhone. Die laatste bewaakt de navigatiebalk, en
+controleert dat geen enkele pagina zijwaarts wegschuift en dat de laatste knop
+van een formulier niet achter de balk valt.
 
 De bewaarknop wordt echt uitgevoerd in de e2e-test: er wordt een nagemaakte
 webshoppagina geserveerd, de bookmarklet-code draait daarop, en we controleren

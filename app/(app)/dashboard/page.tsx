@@ -15,12 +15,15 @@ export default async function DashboardPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ink">
+          <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {t("dashboard.title")}
           </h1>
-          <p className="mt-1.5 text-muted">{t("dashboard.subtitle")}</p>
+          <p className="mt-1 text-sm text-muted sm:mt-1.5 sm:text-base">
+            {t("dashboard.subtitle")}
+          </p>
         </div>
-        <Link href="/lists/new" className="btn btn-primary">
+        {/* Op de telefoon zit deze knop al in de balk onderaan. */}
+        <Link href="/lists/new" className="btn btn-primary hidden md:inline-flex">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -35,7 +38,7 @@ export default async function DashboardPage() {
       </div>
 
       {lists.length === 0 ? (
-        <div className="card mt-8 flex flex-col items-center px-6 py-16 text-center">
+        <div className="card mt-6 flex flex-col items-center px-6 py-12 text-center sm:mt-8 sm:py-16">
           <div className="cover-terracotta flex size-14 items-center justify-center rounded-2xl">
             <svg
               viewBox="0 0 24 24"
@@ -62,7 +65,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {lists.map((list) => (
             <ListCard
               key={list.id}

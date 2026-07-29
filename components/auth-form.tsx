@@ -32,7 +32,7 @@ export function AuthForm({
   const isRegister = mode === "register";
 
   return (
-    <div className="card w-full max-w-md p-7 shadow-soft">
+    <div className="card w-full max-w-md p-6 shadow-soft sm:p-7">
       <h1 className="text-2xl font-semibold tracking-tight text-ink">
         {t(isRegister ? "auth.registerTitle" : "auth.loginTitle")}
       </h1>

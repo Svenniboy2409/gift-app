@@ -7,8 +7,7 @@ import { getTranslator } from "@/lib/i18n/server";
 import { looksLikeJunkImage } from "@/lib/scraper/junk";
 import { merchantFromHost } from "@/lib/scraper/sites";
 import { AddFromBookmarklet } from "@/components/add-from-bookmarklet";
-import { Logo } from "@/components/logo";
-import { SiteFooter } from "@/components/site-header";
+import { PlainHeader, SiteFooter } from "@/components/site-header";
 
 export const metadata = { robots: { index: false, follow: false } };
 
@@ -77,19 +76,9 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
 
   return (
     <>
-      <header className="border-b border-line">
-        <div className="mx-auto flex h-16 w-full max-w-2xl items-center gap-2 px-4 sm:px-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-semibold tracking-tight text-ink"
-          >
-            <Logo />
-            {t("app.name")}
-          </Link>
-        </div>
-      </header>
+      <PlainHeader href="/dashboard" />
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:px-6">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {lists.length === 0 ? (
           <div className="card px-6 py-14 text-center">
             <h1 className="font-semibold text-ink">{t("dashboard.empty.title")}</h1>

@@ -49,6 +49,44 @@ function LinkIcon() {
   );
 }
 
+function ShopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="size-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"
+      />
+    </svg>
+  );
+}
+
+function ArrowIcon({ up = false }: { up?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className={`size-4 ${up ? "" : "rotate-180"}`}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M6 11l6-6 6 6" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="size-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
+      />
+    </svg>
+  );
+}
+
 /** De plakbalk bovenaan: link erin, gegevens eruit. */
 function PasteBar({
   onResult,
@@ -106,6 +144,7 @@ function PasteBar({
             <LinkIcon />
           </span>
           <input
+            id="paste-url"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             className="field pl-10"
@@ -116,7 +155,11 @@ function PasteBar({
             disabled={busy}
           />
         </div>
-        <button type="submit" className="btn btn-primary" disabled={busy || !url.trim()}>
+        <button
+          type="submit"
+          className="btn btn-primary w-full sm:w-auto"
+          disabled={busy || !url.trim()}
+        >
           {busy ? t("gift.fetching") : t("gift.fetch")}
         </button>
       </form>
@@ -229,7 +272,10 @@ function GiftRow({
           {gift.merchant && <span className="chip">{gift.merchant}</span>}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-1">
+        {/* Op een telefoon passen vijf tekstknoppen niet naast elkaar; alles
+            wat vanzelf spreekt wordt daar een icoon, en pas op een breed
+            scherm komt het bijschrift erbij. */}
+        <div className="mt-3 flex items-center gap-1">
           <button type="button" className="btn btn-ghost btn-sm" onClick={onEdit}>
             {t("gift.edit")}
           </button>
@@ -239,37 +285,45 @@ function GiftRow({
               target="_blank"
               rel="noopener noreferrer nofollow"
               className="btn btn-ghost btn-sm"
+              aria-label={t("gift.viewInShop")}
+              title={t("gift.viewInShop")}
             >
-              {t("gift.viewInShop")}
+              <ShopIcon />
+              <span className="hidden sm:inline">{t("gift.viewInShop")}</span>
             </a>
           )}
+
+          <div className="flex-1" />
+
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm px-2"
             onClick={() => move(-1)}
             disabled={index === 0 || pending}
             aria-label={t("gift.moveUp")}
             title={t("gift.moveUp")}
           >
-            ↑
+            <ArrowIcon up />
           </button>
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm px-2"
             onClick={() => move(1)}
             disabled={index === order.length - 1 || pending}
             aria-label={t("gift.moveDown")}
             title={t("gift.moveDown")}
           >
-            ↓
+            <ArrowIcon />
           </button>
           <button
             type="button"
-            className="btn btn-danger btn-sm"
+            className="btn btn-danger btn-sm px-2"
             onClick={remove}
             disabled={pending}
+            aria-label={t("gift.delete")}
+            title={t("gift.delete")}
           >
-            {t("gift.delete")}
+            <TrashIcon />
           </button>
         </div>
       </div>

@@ -16,7 +16,7 @@ function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const { t } = useI18n();
   return (
-    <button type="submit" className="btn btn-primary" disabled={pending}>
+    <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={pending}>
       {pending ? t("common.loading") : label}
     </button>
   );

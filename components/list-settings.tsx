@@ -37,7 +37,7 @@ export function ListSettings({
       </button>
 
       {open && (
-        <div className="border-t border-line p-5">
+        <div className="border-t border-line p-4 sm:p-5">
           <ListForm
             action={updateListAction.bind(null, listId)}
             initial={initial}
@@ -55,7 +55,7 @@ export function ListSettings({
             }}
           >
             <input type="hidden" name="listId" value={listId} />
-            <button type="submit" className="btn btn-danger -ml-3">
+            <button type="submit" className="btn btn-danger w-full sm:-ml-3 sm:w-auto">
               {t("list.delete")}
             </button>
           </form>

@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPublicProfile } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
-import { SiteFooter } from "@/components/site-header";
-import { LanguageSwitcher } from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme";
-import { Logo } from "@/components/logo";
+import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { ListCard } from "@/components/list-card";
 
 export async function generateMetadata({
@@ -35,20 +32,10 @@ export default async function ProfilePage({
 
   return (
     <>
-      <header className="border-b border-line">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
-          <span className="flex items-center gap-2 font-semibold tracking-tight text-ink">
-            <Logo />
-            {t("app.name")}
-          </span>
-          <div className="flex-1" />
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-      </header>
+      <PlainHeader />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-14">
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-4xl">
           {t("profile.title", { name: profile.name })}
         </h1>
 
@@ -57,7 +44,7 @@ export default async function ProfilePage({
             {t("profile.empty", { name: profile.name })}
           </p>
         ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {profile.lists.map((list) => (
               <ListCard
                 key={list.shareCode}

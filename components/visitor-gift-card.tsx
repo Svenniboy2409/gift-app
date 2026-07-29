@@ -132,7 +132,12 @@ export function VisitorGiftCard({
         pending ? "opacity-50" : ""
       } ${soldOut && !gift.myClaim ? "opacity-70" : ""}`}
     >
-      <div className="relative aspect-[4/3] shrink-0 border-b border-line bg-sunken">
+      <div
+        className={`relative shrink-0 border-b border-line bg-sunken ${
+          // Zonder foto is een groot leeg vlak zonde van het scherm.
+          gift.imageUrl ? "aspect-[4/3]" : "aspect-[5/2]"
+        }`}
+      >
         {gift.imageUrl ? (
           <Image
             src={gift.imageUrl}

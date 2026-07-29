@@ -17,10 +17,25 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /mobile\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         // Laat CHROMIUM_PATH wijzen naar een al geïnstalleerde Chromium als de
         // versie niet overeenkomt met wat Playwright zelf zou downloaden.
+        launchOptions: process.env.CHROMIUM_PATH
+          ? { executablePath: process.env.CHROMIUM_PATH }
+          : {},
+      },
+    },
+    {
+      // Een echte telefoonmaat, met aanraakbediening. Het toestel van Apple
+      // draait normaal op WebKit; die hebben we hier niet, dus we nemen de
+      // schermmaat over en draaien hem in Chromium.
+      name: "mobiel",
+      testMatch: /mobile\.spec\.ts/,
+      use: {
+        ...devices["iPhone 14 Pro"],
+        browserName: "chromium",
         launchOptions: process.env.CHROMIUM_PATH
           ? { executablePath: process.env.CHROMIUM_PATH }
           : {},

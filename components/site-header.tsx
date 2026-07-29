@@ -10,8 +10,17 @@ export async function SiteHeader() {
   const [user, { t }] = await Promise.all([getCurrentUser(), getTranslator()]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
+    <header
+      className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur"
+      // De inkeping van de telefoon: in liggende stand loopt de balk anders
+      // onder de camera door.
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
+    >
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6">
         <Link
           href={user ? "/dashboard" : "/"}
           className="flex items-center gap-2 font-semibold tracking-tight text-ink"
@@ -22,18 +31,22 @@ export async function SiteHeader() {
 
         <div className="flex-1" />
 
-        <LanguageSwitcher />
+        {/* Taalkeuze staat op een telefoon in de instellingen: bovenin is de
+            ruimte te kostbaar, en je wisselt hem hooguit één keer. */}
+        <span className="hidden sm:inline-flex">
+          <LanguageSwitcher />
+        </span>
         <ThemeToggle />
 
         {user ? (
           <>
-            <Link href="/dashboard" className="btn btn-ghost btn-sm hidden sm:inline-flex">
+            <Link href="/dashboard" className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.dashboard")}
             </Link>
-            <Link href="/settings" className="btn btn-ghost btn-sm">
+            <Link href="/settings" className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.settings")}
             </Link>
-            <form action={logoutAction}>
+            <form action={logoutAction} className="hidden md:block">
               <button type="submit" className="btn btn-secondary btn-sm">
                 {t("nav.logout")}
               </button>
@@ -49,6 +62,41 @@ export async function SiteHeader() {
             </Link>
           </>
         )}
+      </div>
+    </header>
+  );
+}
+
+/**
+ * De kop voor pagina's zonder navigatie: een gedeelde lijst, een profiel, het
+ * bewaarscherm. Alleen de naam van de app en de knoppen voor taal en thema.
+ */
+export async function PlainHeader({ href }: { href?: string }) {
+  const { t } = await getTranslator();
+
+  const brand = (
+    <span className="flex items-center gap-2 font-semibold tracking-tight text-ink">
+      <Logo />
+      {t("app.name")}
+    </span>
+  );
+
+  return (
+    <header
+      className="border-b border-line"
+      style={{
+        paddingTop: "env(safe-area-inset-top)",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+      }}
+    >
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6">
+        {href ? <Link href={href}>{brand}</Link> : brand}
+        <div className="flex-1" />
+        <span className="hidden sm:inline-flex">
+          <LanguageSwitcher />
+        </span>
+        <ThemeToggle />
       </div>
     </header>
   );

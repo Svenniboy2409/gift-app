@@ -36,7 +36,7 @@ export function BookmarkletCard() {
   }
 
   return (
-    <section className="card p-6">
+    <section className="card p-5 sm:p-6">
       <h2 className="font-semibold text-ink">{t("bookmarklet.title")}</h2>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">
         {t("bookmarklet.intro")}

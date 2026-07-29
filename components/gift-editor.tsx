@@ -47,7 +47,11 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   const { t } = useI18n();
   return (
-    <button type="submit" className="btn btn-primary" disabled={pending}>
+    <button
+      type="submit"
+      className="btn btn-primary w-full sm:w-auto"
+      disabled={pending}
+    >
       {pending ? t("common.loading") : t("gift.save")}
     </button>
   );
@@ -89,7 +93,11 @@ export function GiftEditor({
   const titleInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    titleInput.current?.focus();
+    // Op een telefoon zou de cursor meteen het toetsenbord opgooien en het
+    // formulier half wegdrukken. Alleen met een muis springt hij vooruit.
+    if (window.matchMedia("(pointer: fine)").matches) {
+      titleInput.current?.focus();
+    }
   }, []);
 
   useEffect(() => {
@@ -137,7 +145,7 @@ export function GiftEditor({
       {children}
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="sm:w-40 sm:shrink-0">
+        <div className="w-32 sm:w-40 sm:shrink-0">
           <span className="label">{t("gift.field.image")}</span>
           <input type="hidden" name="imageUrl" value={imageUrl} />
           <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-line bg-sunken">
@@ -375,9 +383,13 @@ export function GiftEditor({
         </p>
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
         <SubmitButton />
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn btn-ghost w-full sm:w-auto"
+          onClick={onCancel}
+        >
           {cancelLabel ?? t("gift.cancel")}
         </button>
       </div>

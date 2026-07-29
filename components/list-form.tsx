@@ -29,7 +29,7 @@ function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const { t } = useI18n();
   return (
-    <button type="submit" className="btn btn-primary" disabled={pending}>
+    <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={pending}>
       {pending ? t("common.loading") : label}
     </button>
   );
@@ -120,7 +120,7 @@ export function ListForm({
       <div>
         <span className="label">{t("list.field.coverColor")}</span>
         <input type="hidden" name="coverColor" value={color} />
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-2 sm:gap-2.5">
           {COVER_COLORS.map((option) => (
             <button
               key={option}
@@ -128,7 +128,7 @@ export function ListForm({
               onClick={() => setColor(option)}
               aria-pressed={color === option}
               title={t(`color.${option}` as MessageKey)}
-              className={`cover-${option} size-9 rounded-full transition-transform ${
+              className={`cover-${option} size-10 rounded-full transition-transform sm:size-9 ${
                 color === option
                   ? "ring-2 ring-accent ring-offset-2 ring-offset-[var(--surface-raised)]"
                   : "hover:scale-105"
@@ -184,7 +184,7 @@ export function ListForm({
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 pt-1">
+      <div className="flex flex-col items-stretch gap-3 pt-1 sm:flex-row sm:items-center">
         <SubmitButton label={submitLabel} />
         {children}
       </div>
