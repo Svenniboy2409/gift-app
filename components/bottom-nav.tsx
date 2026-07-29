@@ -43,7 +43,7 @@ function ListsIcon({ active }: { active: boolean }) {
   );
 }
 
-function SettingsIcon({ active }: { active: boolean }) {
+function AccountIcon({ active }: { active: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -85,7 +85,8 @@ export function BottomNav() {
   const { openGift } = useSheets();
 
   const onLists = pathname === "/dashboard" || pathname.startsWith("/lists");
-  const onSettings = pathname.startsWith("/settings");
+  const onAccount =
+    pathname.startsWith("/account") || pathname.startsWith("/settings");
 
   return (
     <nav className="tabbar md:hidden" aria-label={t("nav.main")}>
@@ -110,12 +111,12 @@ export function BottomNav() {
       </div>
 
       <Link
-        href="/settings"
+        href="/account"
         className="tabbar-item"
-        aria-current={onSettings ? "page" : undefined}
+        aria-current={onAccount ? "page" : undefined}
       >
-        <SettingsIcon active={onSettings} />
-        {t("nav.settings")}
+        <AccountIcon active={onAccount} />
+        {t("nav.account")}
       </Link>
     </nav>
   );

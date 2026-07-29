@@ -70,6 +70,8 @@ export type SessionUser = {
   name: string;
   handle: string;
   locale: string;
+  avatarUrl: string | null;
+  bio: string | null;
 };
 
 /** De ingelogde gebruiker, of null. */
@@ -78,7 +80,15 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!id) return null;
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, email: true, name: true, handle: true, locale: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      handle: true,
+      locale: true,
+      avatarUrl: true,
+      bio: true,
+    },
   });
   return user;
 }
@@ -109,6 +119,7 @@ const HANDLE_RESERVED = new Set([
   "lists",
   "uploads",
   "static",
+  "account",
 ]);
 
 export function isReservedHandle(handle: string) {

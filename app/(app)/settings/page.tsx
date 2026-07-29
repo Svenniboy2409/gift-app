@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { logoutAction } from "@/lib/actions/auth";
 import { getTranslator } from "@/lib/i18n/server";
@@ -11,9 +12,17 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-5 sm:space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-        {t("settings.title")}
-      </h1>
+      <div>
+        <Link href="/account" className="btn btn-ghost btn-sm -ml-3 mb-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          {t("settings.back")}
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          {t("settings.title")}
+        </h1>
+      </div>
 
       <section className="card p-5 sm:p-6">
         <h2 className="mb-4 font-semibold text-ink">{t("settings.profile")}</h2>
@@ -21,6 +30,8 @@ export default async function SettingsPage() {
           name={user.name}
           handle={user.handle}
           locale={user.locale}
+          avatarUrl={user.avatarUrl}
+          bio={user.bio}
         />
       </section>
 

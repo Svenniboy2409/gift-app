@@ -28,9 +28,17 @@ test("de navigatiebalk staat onderaan en brengt je naar beide tabbladen", async 
     "page",
   );
 
-  await balk.getByRole("link", { name: "Instellingen" }).click();
+  await balk.getByRole("link", { name: "Account" }).click();
+  await page.waitForURL(/\/account$/);
+  await expect(balk.getByRole("link", { name: "Account" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  // De instellingen zitten achter het tandwiel linksboven op je account.
+  await page.getByRole("link", { name: "Instellingen" }).first().click();
   await page.waitForURL(/\/settings$/);
-  await expect(balk.getByRole("link", { name: "Instellingen" })).toHaveAttribute(
+  await expect(balk.getByRole("link", { name: "Account" })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -220,7 +228,7 @@ test("geen enkele pagina schuift zijwaarts weg", async ({ page }) => {
 
   const deelLink = await page.locator('input[readonly]').inputValue();
 
-  for (const pad of ["/dashboard", "/settings", "/lists/new"]) {
+  for (const pad of ["/dashboard", "/account", "/settings", "/lists/new"]) {
     await page.goto(pad);
     expect(await scrollsSideways(page), `${pad} schuift zijwaarts`).toBe(false);
   }

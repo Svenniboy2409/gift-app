@@ -43,8 +43,8 @@ export async function SiteHeader() {
             <Link href="/dashboard" className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.dashboard")}
             </Link>
-            <Link href="/settings" className="btn btn-ghost btn-sm hidden md:inline-flex">
-              {t("nav.settings")}
+            <Link href="/account" className="btn btn-ghost btn-sm hidden md:inline-flex">
+              {t("nav.account")}
             </Link>
             <form action={logoutAction} className="hidden md:block">
               <button type="submit" className="btn btn-secondary btn-sm">

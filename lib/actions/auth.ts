@@ -105,6 +105,8 @@ export async function updateProfileAction(
     name: formData.get("name"),
     handle: formData.get("handle"),
     locale: formData.get("locale"),
+    bio: formData.get("bio") ?? "",
+    avatarUrl: formData.get("avatarUrl") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "invalid" };
@@ -123,11 +125,15 @@ export async function updateProfileAction(
       name: parsed.data.name,
       handle: parsed.data.handle,
       locale: parsed.data.locale,
+      bio: parsed.data.bio || null,
+      avatarUrl: parsed.data.avatarUrl || null,
     },
   });
   await setLocaleCookie(parsed.data.locale);
   revalidatePath("/settings");
+  revalidatePath("/account");
   revalidatePath("/dashboard");
+  revalidatePath(`/u/${parsed.data.handle}`);
   return { success: "saved" };
 }
 

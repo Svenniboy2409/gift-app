@@ -1,13 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   changePasswordAction,
   updateProfileAction,
   type FormState,
 } from "@/lib/actions/auth";
+import { compressImage } from "@/lib/image-compress";
 import { useOrigin } from "@/lib/hooks";
+import { uploadErrorKey } from "@/lib/upload-errors";
+import { Avatar } from "@/components/avatar";
 import { LOCALES, type MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/client";
 import { normalizeHandle } from "@/lib/validation";
@@ -49,10 +52,14 @@ export function ProfileForm({
   name,
   handle,
   locale,
+  avatarUrl,
+  bio,
 }: {
   name: string;
   handle: string;
   locale: string;
+  avatarUrl: string | null;
+  bio: string | null;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(
@@ -60,10 +67,80 @@ export function ProfileForm({
     {},
   );
   const [handleValue, setHandleValue] = useState(handle);
+  const [photo, setPhoto] = useState(avatarUrl ?? "");
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const origin = useOrigin();
+
+  /** Dezelfde weg als een productfoto: eerst verkleinen, dan versturen. */
+  async function uploadPhoto(file: File) {
+    setUploading(true);
+    setPhotoError(null);
+    try {
+      const body = new FormData();
+      body.set("file", await compressImage(file, { maxSide: 640 }));
+      const response = await fetch("/api/upload", { method: "POST", body });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(data?.error ?? "upload-failed");
+      }
+      const data = (await response.json()) as { url: string };
+      setPhoto(data.url);
+    } catch (error) {
+      setPhotoError(t(uploadErrorKey((error as Error).message)));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <form action={formAction} className="space-y-4">
+      <div>
+        <span className="label">{t("settings.photo")}</span>
+        <input type="hidden" name="avatarUrl" value={photo} />
+        <div className="flex items-center gap-4">
+          {uploading ? (
+            <span className="skeleton size-20 rounded-full" />
+          ) : (
+            <Avatar name={name} src={photo} className="size-20" />
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+            >
+              {t("settings.photoChoose")}
+            </button>
+            {photo && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setPhoto("")}
+              >
+                {t("settings.photoRemove")}
+              </button>
+            )}
+          </div>
+        </div>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void uploadPhoto(file);
+            event.target.value = "";
+          }}
+        />
+        {photoError && <p className="mt-1 text-xs text-danger">{photoError}</p>}
+      </div>
+
       <div>
         <label className="label" htmlFor="settings-name">
           {t("auth.name")}
@@ -97,6 +174,22 @@ export function ProfileForm({
         <p className="mt-1.5 text-xs text-subtle">
           {t("settings.handleHint", { url: `${origin}/u/${handleValue}` })}
         </p>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="settings-bio">
+          {t("settings.bio")}{" "}
+          <span className="font-normal text-subtle">({t("common.optional")})</span>
+        </label>
+        <textarea
+          id="settings-bio"
+          name="bio"
+          className="field min-h-20 resize-y"
+          defaultValue={bio ?? ""}
+          placeholder={t("settings.bioPlaceholder")}
+          maxLength={300}
+        />
+        <p className="mt-1.5 text-xs text-subtle">{t("settings.bioHint")}</p>
       </div>
 
       <div>

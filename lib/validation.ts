@@ -35,6 +35,8 @@ export const profileSchema = z.object({
     .max(30)
     .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, "handle-invalid"),
   locale: z.enum(["nl", "en"]),
+  bio: z.string().trim().max(300).optional().or(z.literal("")),
+  avatarUrl: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 
 export const passwordChangeSchema = z.object({

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getPublicProfile } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
+import { Avatar } from "@/components/avatar";
 import { ListCard } from "@/components/list-card";
 
 export async function generateMetadata({
@@ -35,12 +36,25 @@ export default async function ProfilePage({
       <PlainHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-14">
-        <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-4xl">
-          {t("profile.title", { name: profile.name })}
-        </h1>
+        <div className="flex flex-col items-center text-center">
+          <Avatar
+            name={profile.name}
+            src={profile.avatarUrl}
+            className="size-24"
+          />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink sm:text-4xl">
+            {t("profile.title", { name: profile.name })}
+          </h1>
+          <p className="mt-1 text-sm font-medium text-subtle">@{profile.handle}</p>
+          {profile.bio && (
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted sm:text-base">
+              {profile.bio}
+            </p>
+          )}
+        </div>
 
         {profile.lists.length === 0 ? (
-          <p className="mt-4 text-muted">
+          <p className="mt-6 text-center text-muted">
             {t("profile.empty", { name: profile.name })}
           </p>
         ) : (

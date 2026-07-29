@@ -30,7 +30,10 @@ maar de eigenaar van de lijst ziet dat nooit.
   exemplaren telt de app af ("nog 1 van 2 beschikbaar"). Je eigen claim kun je
   altijd weer intrekken.
 - **Delen** via een onraadbare link (`/l/<code>`) en een profielpagina
-  (`/u/<handle>`) met je openbare lijsten.
+  (`/u/<handle>`) met je profielfoto, een korte bio en je openbare lijsten.
+- **Je account** (`/account`) laat je eigen profiel zien zoals anderen het
+  krijgen, met daaronder weggeklapt de lijsten die je juist niet deelt. De
+  instellingen zitten achter het tandwiel linksboven.
 - **Nederlands en Engels**, lichte en donkere modus.
 
 ## Snel starten
@@ -434,7 +437,7 @@ gedekt door `tests/unit/extract.test.ts` met realistische HTML van elke variant.
 ```
 app/
   (auth)/           inloggen en registreren
-  (app)/            dashboard, lijst bewerken, instellingen (ingelogd)
+  (app)/            dashboard, lijst bewerken, account, instellingen (ingelogd)
   l/[code]/         de gedeelde lijst voor bezoekers
   u/[handle]/       openbaar profiel
   api/scrape/       productgegevens uit een link halen

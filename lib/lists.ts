@@ -125,6 +125,8 @@ export async function getPublicProfile(handle: string) {
     select: {
       name: true,
       handle: true,
+      avatarUrl: true,
+      bio: true,
       lists: {
         where: { visibility: "PUBLIC" },
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
