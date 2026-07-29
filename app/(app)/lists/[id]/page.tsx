@@ -4,6 +4,15 @@ import { requireUser } from "@/lib/auth";
 import { getListForOwner } from "@/lib/gifts";
 import { getTranslator } from "@/lib/i18n/server";
 import { daysUntil, formatDate } from "@/lib/i18n";
+import {
+  MAX_MEMBERS,
+  getCollabCode,
+  getParticipants,
+  isListOwner,
+} from "@/lib/collab";
+import { getFriends } from "@/lib/friends";
+import { prisma } from "@/lib/db";
+import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
 import { SharePanel } from "@/components/share-panel";
@@ -23,6 +32,26 @@ export default async function ListPage({
     getTranslator(),
   ]);
   if (!list) notFound();
+
+  // Wie doet er mee, wie kun je nog vragen, en wat is de link om mee te doen?
+  const owner = await isListOwner(user.id, list.id);
+  const [participants, friends, invites, collabCode] = await Promise.all([
+    getParticipants(list.id),
+    owner ? getFriends(user.id) : Promise.resolve([]),
+    owner
+      ? prisma.listInvite.findMany({
+          where: { listId: list.id },
+          select: { id: true, to: { select: { id: true, name: true } } },
+        })
+      : Promise.resolve([]),
+    owner ? getCollabCode(user.id, list.id) : Promise.resolve(null),
+  ]);
+
+  const invited = new Set(invites.map((invite) => invite.to.id));
+  const inList = new Set(participants.map((person) => person.id));
+  const invitable = friends.filter(
+    (friend) => !inList.has(friend.id) && !invited.has(friend.id),
+  );
 
   const days = list.eventDate ? daysUntil(list.eventDate) : null;
   const countdown =
@@ -65,6 +94,7 @@ export default async function ListPage({
 
           {/* De instellingen horen bij de lijst, dus staan ze op de omslag. */}
           <ListSettings
+            isOwner={owner}
             listId={list.id}
             initial={{
               title: list.title,
@@ -76,7 +106,21 @@ export default async function ListPage({
               coverColor: list.coverColor,
               visibility: list.visibility,
             }}
-          />
+          >
+            <ListCollab
+              listId={list.id}
+              isOwner={owner}
+              viewerId={user.id}
+              participants={participants}
+              invitable={invitable}
+              pending={invites.map((invite) => ({
+                id: invite.id,
+                name: invite.to.name,
+              }))}
+              collabCode={collabCode}
+              max={MAX_MEMBERS}
+            />
+          </ListSettings>
           <div className="relative">
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d]">
               {t(`occasion.${list.occasion}` as "occasion.OTHER")}
@@ -87,6 +131,13 @@ export default async function ListPage({
             {list.description && (
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90 sm:text-base">
                 {list.description}
+              </p>
+            )}
+            {participants.length > 1 && (
+              <p className="mt-2 text-sm text-white/90">
+                {t("collab.together", {
+                  names: participants.map((person) => person.name).join(", "),
+                })}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-2">

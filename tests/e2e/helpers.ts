@@ -65,3 +65,34 @@ export async function setVisibility(page: Page, label: string) {
   // Opslaan sluit het paneel; dat is meteen het bewijs dat het gelukt is.
   await expect(page.getByRole("dialog")).toHaveCount(0);
 }
+
+/**
+ * Nodigt precies deze persoon uit vanuit het zoekresultaat. Op de profielnaam
+ * zoeken kan meerdere mensen opleveren — bijvoorbeeld sven en sven-2 — dus we
+ * kiezen de rij met exact deze naam erin.
+ */
+export async function invitePerson(page: Page, handle: string) {
+  await page.getByLabel("Iemand zoeken").fill(handle);
+  await page.getByRole("button", { name: "Zoeken" }).click();
+
+  // Alleen binnen het zoekblok kijken: dezelfde persoon staat straks ook bij
+  // de verstuurde uitnodigingen, en dan zijn er twee rijen.
+  const zoekblok = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Iemand zoeken" }) });
+  const rij = zoekblok
+    .locator("li")
+    .filter({ has: page.getByText(`@${handle}`, { exact: true }) });
+  await rij.getByRole("button", { name: "Uitnodigen" }).click();
+  await expect(rij.getByText("Wacht op antwoord")).toBeVisible();
+}
+
+/**
+ * Accepteert de bovenste uitnodiging en wacht tot hij verdwenen is. Zonder dat
+ * wachten loopt de test door terwijl de serveractie nog bezig is.
+ */
+export async function acceptInvite(page: Page) {
+  const knop = page.getByRole("button", { name: "Accepteren" }).first();
+  await knop.click();
+  await expect(knop).toHaveCount(0);
+}

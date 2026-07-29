@@ -35,6 +35,10 @@ maar de eigenaar van de lijst ziet dat nooit.
 - **Vrienden** (`/friends`): iemand opzoeken op profielnaam of een
   uitnodigingslink delen (`/i/<code>`). Vrienden staan bij elkaar met een link
   naar hun profiel.
+- **Samen aan één lijst.** Nodig vrienden uit om mee te doen — via het tandwiel
+  van de lijst of met een link (`/j/<code>`). Iedereen kan dan cadeaus
+  toevoegen en aanpassen; de instellingen blijven van de eigenaar en gelden
+  voor alle deelnemers. Met hoogstens tien mensen tegelijk.
 - **Een lijst alleen voor vrienden.** Naast privé, met-de-link en openbaar is er
   nu ook *alleen mijn vrienden*: die lijst opent alleen voor wie je als vriend
   hebt — de deel-link is dan niet genoeg — en staat bij hen ook op je profiel.
@@ -389,6 +393,20 @@ De vier standen van een lijst:
 
 De controle zit in de datalaag (`getListForVisitor`, `getPublicProfile`), niet in
 de UI: een vriendenlijst opvragen zonder vriend te zijn levert gewoon niets op.
+
+## Samen aan één lijst
+
+De eigenaar staat niet in `ListMember` — dat is `List.userId`. Wie meedoet mag
+alles met de cadeaus (`editableBy` in `lib/gifts.ts` laat eigenaar én deelnemers
+door), maar de instellingen blijven van de eigenaar: die functies filteren op
+`userId` en dat is precies de bedoeling, want wat de eigenaar kiest geldt voor
+iedereen. Staat de lijst op "ook op mijn profiel", dan verschijnt hij dus op het
+profiel van álle deelnemers.
+
+Meedoen kan op twee manieren: een uitnodiging aan een vriend, die op het tabblad
+Sociaal binnenkomt, of de link `/j/<code>` voor iemand buiten je vriendenlijst.
+Meer dan tien mensen per lijst gaat niet; dat wordt bewaakt bij het uitnodigen
+én bij het meedoen zelf, met een unit-test tegen de echte database erop.
 
 ## Hoe de verrassing bewaakt wordt
 

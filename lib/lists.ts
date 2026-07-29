@@ -99,10 +99,13 @@ export async function regenerateShareCode(userId: string, listId: string) {
   return updated.shareCode;
 }
 
-/** Alle lijsten van de ingelogde gebruiker, voor het dashboard. */
+/**
+ * Alle lijsten waar je bij hoort — die van jezelf én die waar je samen met
+ * iemand anders aan werkt.
+ */
 export async function getListsForOwner(userId: string) {
   return prisma.list.findMany({
-    where: { userId },
+    where: { OR: [{ userId }, { members: { some: { userId } } }] },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -114,12 +117,20 @@ export async function getListsForOwner(userId: string) {
       visibility: true,
       shareCode: true,
       createdAt: true,
+      /** Van jou, of doe je alleen mee? Dat scheelt in wat je mag. */
+      userId: true,
       _count: { select: { gifts: true } },
     },
   });
 }
 
-/** De openbare lijsten van een profiel (`/u/<handle>`). */
+/**
+ * De lijsten die op een profiel horen (`/u/<handle>`).
+ *
+ * Dat zijn niet alleen de lijsten van die persoon zelf, maar ook de lijsten
+ * waar hij samen met iemand anders aan werkt — die staan op ieders profiel.
+ * Vrienden zien er de vriendenlijsten bij.
+ */
 export async function getPublicProfile(
   handle: string,
   /** Wie er kijkt, als diegene is ingelogd. Vrienden zien meer. */
@@ -127,37 +138,17 @@ export async function getPublicProfile(
 ) {
   const user = await prisma.user.findUnique({
     where: { handle },
-    select: {
-      id: true,
-      name: true,
-      handle: true,
-      avatarUrl: true,
-      bio: true,
-      lists: {
-        where: { visibility: "PUBLIC" },
-        orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-        select: {
-          title: true,
-          description: true,
-          occasion: true,
-          eventDate: true,
-          coverColor: true,
-          shareCode: true,
-          visibility: true,
-          _count: { select: { gifts: true } },
-        },
-      },
-    },
+    select: { id: true, name: true, handle: true, avatarUrl: true, bio: true },
   });
   if (!user) return null;
 
-  // Vrienden krijgen er de vriendenlijsten bij. Dat is een aparte query, zodat
-  // de where hierboven onveranderd blijft voor wie niet ingelogd is.
   const friend = viewerId ? await areFriends(viewerId, user.id) : false;
-  if (!friend) return { ...user, viewerIsFriend: false };
 
-  const friendLists = await prisma.list.findMany({
-    where: { userId: user.id, visibility: "FRIENDS" },
+  const lists = await prisma.list.findMany({
+    where: {
+      OR: [{ userId: user.id }, { members: { some: { userId: user.id } } }],
+      visibility: friend ? { in: ["PUBLIC", "FRIENDS"] } : "PUBLIC",
+    },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     select: {
       title: true,
@@ -171,9 +162,5 @@ export async function getPublicProfile(
     },
   });
 
-  return {
-    ...user,
-    viewerIsFriend: true,
-    lists: [...user.lists, ...friendLists],
-  };
+  return { ...user, viewerIsFriend: friend, lists };
 }

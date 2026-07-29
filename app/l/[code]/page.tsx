@@ -69,7 +69,11 @@ export default async function SharedListPage({
               {list.title}
             </h1>
             <p className="mt-2 text-white/90">
-              {t("visitor.byLine", { name: list.ownerName })}
+              {t("visitor.byLine", {
+                // Werken er meer mensen aan de lijst, dan horen hun namen er
+                // ook bij te staan.
+                name: list.participants.map((person) => person.name).join(", "),
+              })}
             </p>
             {list.description && (
               <p className="mt-3 max-w-2xl leading-relaxed text-white/90">

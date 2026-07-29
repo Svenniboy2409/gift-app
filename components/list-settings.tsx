@@ -15,9 +15,15 @@ import { Sheet } from "@/components/sheet";
 export function ListSettings({
   listId,
   initial,
+  isOwner,
+  children,
 }: {
   listId: string;
   initial: ListFormValues;
+  /** Alleen de eigenaar mag de instellingen wijzigen; ze gelden voor iedereen. */
+  isOwner: boolean;
+  /** Het blok "samen invullen", dat de pagina zelf samenstelt. */
+  children?: React.ReactNode;
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -56,29 +62,42 @@ export function ListSettings({
       </button>
 
       <Sheet open={open} onClose={close} title={t("list.settings")}>
-        <div className="pb-2">
-          <ListForm
-            action={updateListAction.bind(null, listId)}
-            initial={initial}
-            submitLabel={t("list.save")}
-            onSaved={saved}
-          />
+        <div className="space-y-5 pb-2">
+          {isOwner ? (
+            <>
+              <ListForm
+                action={updateListAction.bind(null, listId)}
+                initial={initial}
+                submitLabel={t("list.save")}
+                onSaved={saved}
+              />
 
-          {/* Los formulier: een <form> mag niet in een ander <form> staan. */}
-          <form
-            action={deleteListAction}
-            className="mt-6 border-t border-line pt-4"
-            onSubmit={(event) => {
-              if (!window.confirm(t("list.deleteConfirm"))) {
-                event.preventDefault();
-              }
-            }}
-          >
-            <input type="hidden" name="listId" value={listId} />
-            <button type="submit" className="btn btn-danger w-full sm:w-auto">
-              {t("list.delete")}
-            </button>
-          </form>
+              {children}
+
+              {/* Los formulier: een <form> mag niet in een ander <form> staan. */}
+              <form
+                action={deleteListAction}
+                className="border-t border-line pt-4"
+                onSubmit={(event) => {
+                  if (!window.confirm(t("list.deleteConfirm"))) {
+                    event.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="listId" value={listId} />
+                <button type="submit" className="btn btn-danger w-full sm:w-auto">
+                  {t("list.delete")}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              {/* Meedoen betekent: cadeaus beheren. De instellingen blijven van
+                  de eigenaar, want ze gelden voor iedereen die meedoet. */}
+              <p className="text-sm text-muted">{t("collab.memberNotice")}</p>
+              {children}
+            </>
+          )}
         </div>
       </Sheet>
     </>

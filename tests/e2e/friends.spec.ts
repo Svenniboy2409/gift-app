@@ -1,5 +1,11 @@
 import { expect, test, type Browser } from "@playwright/test";
-import { createList, register, setVisibility } from "./helpers";
+import {
+  acceptInvite,
+  createList,
+  invitePerson,
+  register,
+  setVisibility,
+} from "./helpers";
 
 /**
  * Vrienden: uitnodigen (opzoeken én via een link), accepteren, en wat dat
@@ -28,20 +34,21 @@ test("iemand opzoeken, uitnodigen en accepteren", async ({ browser }) => {
 
   // Anna zoekt Bram op en nodigt hem uit.
   await anna.page.goto("/friends");
-  await anna.page.getByLabel("Iemand zoeken").fill(bram.handle);
-  await anna.page.getByRole("button", { name: "Zoeken" }).click();
-  await anna.page.getByRole("button", { name: "Uitnodigen" }).first().click();
-  await expect(anna.page.getByText("Wacht op antwoord").first()).toBeVisible();
+  await invitePerson(anna.page, bram.handle);
 
   // Bram ziet de uitnodiging staan en accepteert.
   await bram.page.goto("/friends");
   await expect(bram.page.getByText("Uitnodigingen voor jou")).toBeVisible();
   await expect(bram.page.getByText("Anna Vriend")).toBeVisible();
-  await bram.page.getByRole("button", { name: "Accepteren" }).click();
+  await acceptInvite(bram.page);
 
-  await expect(bram.page.getByRole("heading", { name: /Vrienden \(1\)/ })).toBeVisible();
+  await expect(
+    bram.page.getByRole("heading", { name: /Vrienden \(1\)/ }),
+  ).toBeVisible();
   await anna.page.reload();
-  await expect(anna.page.getByRole("heading", { name: /Vrienden \(1\)/ })).toBeVisible();
+  await expect(
+    anna.page.getByRole("heading", { name: /Vrienden \(1\)/ }),
+  ).toBeVisible();
 
   await anna.context.close();
   await bram.context.close();
@@ -52,9 +59,7 @@ test("via de uitnodigingslink word je ook vrienden", async ({ browser }) => {
   const dana = await persoon(browser, "Dana Link", "dana");
 
   await cas.page.goto("/friends");
-  const link = await cas.page
-    .locator('input[readonly]')
-    .inputValue();
+  const link = await cas.page.locator("input[readonly]").inputValue();
   expect(link).toContain("/i/");
 
   // Dana opent de link van Cas en stuurt meteen een uitnodiging.
@@ -64,8 +69,10 @@ test("via de uitnodigingslink word je ook vrienden", async ({ browser }) => {
 
   // Cas accepteert.
   await cas.page.goto("/friends");
-  await cas.page.getByRole("button", { name: "Accepteren" }).click();
-  await expect(cas.page.getByRole("heading", { name: /Vrienden \(1\)/ })).toBeVisible();
+  await acceptInvite(cas.page);
+  await expect(
+    cas.page.getByRole("heading", { name: /Vrienden \(1\)/ }),
+  ).toBeVisible();
 
   await cas.context.close();
   await dana.context.close();
@@ -80,7 +87,7 @@ test("een vriendenlijst is alleen voor vrienden te openen", async ({
   await eva.page.goto("/dashboard");
   await createList(eva.page, "Alleen voor vrienden");
   await setVisibility(eva.page, "Alleen mijn vrienden");
-  const deelLink = await eva.page.locator('input[readonly]').inputValue();
+  const deelLink = await eva.page.locator("input[readonly]").inputValue();
   const pad = new URL(deelLink).pathname;
 
   // Finn is nog geen vriend: de deel-link doet niets voor hem.
@@ -96,12 +103,10 @@ test("een vriendenlijst is alleen voor vrienden te openen", async ({
 
   // Eva nodigt Finn uit, Finn accepteert.
   await eva.page.goto("/friends");
-  await eva.page.getByLabel("Iemand zoeken").fill(finn.handle);
-  await eva.page.getByRole("button", { name: "Zoeken" }).click();
-  await eva.page.getByRole("button", { name: "Uitnodigen" }).first().click();
+  await invitePerson(eva.page, finn.handle);
 
   await finn.page.goto("/friends");
-  await finn.page.getByRole("button", { name: "Accepteren" }).click();
+  await acceptInvite(finn.page);
 
   // Nu mag Finn er wel in, en staat de lijst ook op Eva's profiel voor hem.
   await finn.page.goto(pad);

@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/auth";
+import { getListInvitesFor } from "@/lib/collab";
 import {
   getFriends,
   getIncomingRequests,
@@ -6,6 +7,7 @@ import {
   getOutgoingRequests,
 } from "@/lib/friends";
 import { getTranslator } from "@/lib/i18n/server";
+import { ListInvites } from "@/components/collab";
 import {
   FriendList,
   IncomingRequests,
@@ -20,13 +22,15 @@ import {
  */
 export default async function FriendsPage() {
   const user = await requireUser();
-  const [friends, incoming, outgoing, code, { t }] = await Promise.all([
-    getFriends(user.id),
-    getIncomingRequests(user.id),
-    getOutgoingRequests(user.id),
-    getInviteCode(user.id),
-    getTranslator(),
-  ]);
+  const [friends, incoming, outgoing, listInvites, code, { t }] =
+    await Promise.all([
+      getFriends(user.id),
+      getIncomingRequests(user.id),
+      getOutgoingRequests(user.id),
+      getListInvitesFor(user.id),
+      getInviteCode(user.id),
+      getTranslator(),
+    ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -40,6 +44,8 @@ export default async function FriendsPage() {
       </div>
 
       <IncomingRequests requests={incoming} />
+
+      <ListInvites invites={listInvites} />
 
       <section>
         <h2 className="text-lg font-semibold tracking-tight text-ink">

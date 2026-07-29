@@ -4,6 +4,14 @@ import { prisma } from "@/lib/db";
 import { areFriends } from "@/lib/friends";
 
 /**
+ * Wie mag er aan de cadeaus van een lijst komen: de eigenaar, en iedereen die
+ * hij heeft uitgenodigd om mee te doen.
+ */
+function editableBy(userId: string) {
+  return { OR: [{ userId }, { members: { some: { userId } } }] };
+}
+
+/**
  * BELANGRIJK — de verrassing bewaken.
  *
  * Dit bestand kent twee manieren om een lijst op te halen:
@@ -56,9 +64,10 @@ const ownerGiftSelect = {
 } as const;
 
 /** Lijst inclusief cadeaus voor de eigenaar — zonder ook maar één claim-veld. */
+/** De lijst zoals de eigenaar én de mensen die meedoen hem zien. */
 export async function getListForOwner(userId: string, listId: string) {
   return prisma.list.findFirst({
-    where: { id: listId, userId },
+    where: { id: listId, ...editableBy(userId) },
     select: {
       id: true,
       title: true,
@@ -103,6 +112,8 @@ export type VisitorList = {
   shareCode: string;
   ownerName: string;
   ownerHandle: string;
+  /** Iedereen die aan de lijst werkt, met de eigenaar voorop. */
+  participants: { name: string; handle: string }[];
   gifts: VisitorGift[];
 };
 
@@ -130,6 +141,10 @@ export async function getListForVisitor(
       visibility: true,
       userId: true,
       user: { select: { name: true, handle: true } },
+      members: {
+        orderBy: { createdAt: "asc" },
+        select: { user: { select: { name: true, handle: true } } },
+      },
       gifts: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
         select: {
@@ -166,6 +181,11 @@ export async function getListForVisitor(
     shareCode: list.shareCode,
     ownerName: list.user.name,
     ownerHandle: list.user.handle,
+    // Iedereen die aan de lijst werkt; de eigenaar voorop.
+    participants: [
+      { name: list.user.name, handle: list.user.handle },
+      ...list.members.map((member) => member.user),
+    ],
     gifts: list.gifts.map((gift) => {
       const mine = claimerToken
         ? gift.claims.find((claim) => claim.claimerToken === claimerToken)
@@ -198,7 +218,7 @@ export async function createGift(
   input: GiftInput,
 ) {
   const list = await prisma.list.findFirst({
-    where: { id: listId, userId },
+    where: { id: listId, ...editableBy(userId) },
     select: { id: true },
   });
   if (!list) return null;
@@ -234,7 +254,7 @@ export async function updateGift(
   input: GiftInput,
 ) {
   const owned = await prisma.gift.findFirst({
-    where: { id: giftId, list: { userId } },
+    where: { id: giftId, list: editableBy(userId) },
     select: { id: true },
   });
   if (!owned) return null;
@@ -259,7 +279,7 @@ export async function updateGift(
 
 export async function deleteGift(userId: string, giftId: string) {
   const result = await prisma.gift.deleteMany({
-    where: { id: giftId, list: { userId } },
+    where: { id: giftId, list: editableBy(userId) },
   });
   return result.count > 0;
 }
@@ -271,7 +291,7 @@ export async function reorderGifts(
   ids: string[],
 ) {
   const list = await prisma.list.findFirst({
-    where: { id: listId, userId },
+    where: { id: listId, ...editableBy(userId) },
     select: { id: true },
   });
   if (!list) return false;
