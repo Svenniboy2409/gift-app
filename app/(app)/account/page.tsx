@@ -10,7 +10,7 @@ import { ProfileLink } from "@/components/profile-link";
 /**
  * Je eigen profiel, zoals anderen het zien — met daaronder, weggeklapt, de
  * lijsten die je juist níét deelt. De instellingen zitten achter het tandwiel
- * linksboven.
+ * in de rechterbovenhoek van het profielvak.
  */
 export default async function AccountPage() {
   const user = await requireUser();
@@ -35,10 +35,13 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      {/* Zo ziet je profiel eruit voor iemand die je link opent. De
+          instellingen zitten in de hoek, want ze horen bij jou en niet bij
+          wat een bezoeker te zien krijgt. */}
+      <section className="card relative flex flex-col items-center px-5 py-7 text-center sm:px-8">
         <Link
           href="/settings"
-          className="btn btn-ghost -ml-2 px-2 text-ink"
+          className="btn btn-ghost absolute right-1.5 top-1.5 px-2 text-muted"
           aria-label={t("nav.settings")}
           title={t("nav.settings")}
         >
@@ -57,10 +60,7 @@ export default async function AccountPage() {
             />
           </svg>
         </Link>
-      </div>
 
-      {/* Zo ziet je profiel eruit voor iemand die je link opent. */}
-      <section className="card flex flex-col items-center px-5 py-7 text-center sm:px-8">
         <Avatar name={user.name} src={user.avatarUrl} className="size-24" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">
           {user.name}
@@ -82,7 +82,9 @@ export default async function AccountPage() {
         <h2 className="text-lg font-semibold tracking-tight text-ink">
           {t("profile.publicLists")}
         </h2>
-        <p className="mt-1 text-sm text-muted">{t("profile.publicListsBody")}</p>
+        <p className="mt-1 text-sm text-muted">
+          {t("profile.publicListsBody")}
+        </p>
 
         {publicLists.length === 0 ? (
           <div className="card mt-4 px-6 py-10 text-center">
