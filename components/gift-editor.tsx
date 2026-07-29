@@ -7,6 +7,7 @@ import type { FormState } from "@/lib/actions/auth";
 import { compressImage } from "@/lib/image-compress";
 import { useI18n } from "@/lib/i18n/client";
 import { uploadErrorKey } from "@/lib/upload-errors";
+import { ImageCropper } from "@/components/image-cropper";
 import type { MessageKey } from "@/lib/i18n";
 
 export type GiftDraft = {
@@ -89,6 +90,8 @@ export function GiftEditor({
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
   const [imageUrl, setImageUrl] = useState(draft.imageUrl);
   const [uploading, setUploading] = useState(false);
+  /** De gekozen foto, zolang je hem nog aan het bijsnijden bent. */
+  const [cropping, setCropping] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   /** De letterlijke tekst van de opslagdienst, als die er is. */
   const [uploadDetail, setUploadDetail] = useState<string | null>(null);
@@ -106,6 +109,18 @@ export function GiftEditor({
   useEffect(() => {
     if (state.success) onDone();
   }, [state.success, onDone]);
+
+  /** Eerst leesbaar maken (HEIC!), dan pas het bijsnijden aanbieden. */
+  async function choose(file: File) {
+    setUploading(true);
+    setUploadError(null);
+    setUploadDetail(null);
+    try {
+      setCropping(await compressImage(file));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function upload(file: File) {
     setUploading(true);
@@ -228,10 +243,22 @@ export function GiftEditor({
             className="hidden"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) void upload(file);
+              if (file) void choose(file);
               event.target.value = "";
             }}
           />
+          {/* Bij een productfoto maakt de verhouding niet uit: vrij kader. */}
+          {cropping && (
+            <ImageCropper
+              file={cropping}
+              onCancel={() => setCropping(null)}
+              onDone={(cropped) => {
+                setCropping(null);
+                void upload(cropped);
+              }}
+            />
+          )}
+
           {uploadError && (
             <div className="mt-1">
               <p className="text-xs text-danger">{uploadError}</p>

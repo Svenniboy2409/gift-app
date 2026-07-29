@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openManualGiftForm } from "./helpers";
+import { confirmCrop, openManualGiftForm } from "./helpers";
 
 /**
  * De uploadknop van begin tot eind: bestand kiezen, opslaan, en controleren dat
@@ -40,11 +40,13 @@ test("een eigen foto uploaden en terugzien bij het cadeau", async ({ page }) => 
     buffer: PADDED,
   });
 
-  // Zodra de upload klaar is verschijnt de voorvertoning.
-  const voorvertoning = page.locator("form img").first();
-  await expect(voorvertoning).toBeVisible({ timeout: 15_000 });
-  const bron = await voorvertoning.getAttribute("src");
-  expect(bron).toBeTruthy();
+  // Je krijgt de foto eerst te zien om bij te snijden.
+  await confirmCrop(page);
+
+  // Zodra de upload klaar is staat het adres in het verborgen veld. Daarnaar
+  // kijken is preciezer dan naar de eerste de beste afbeelding op het scherm.
+  const veld = page.locator('input[name="imageUrl"]');
+  await expect.poll(() => veld.inputValue(), { timeout: 20_000 }).not.toBe("");
 
   await page.getByRole("button", { name: "Cadeau opslaan" }).click();
 
@@ -103,15 +105,18 @@ test("een grote telefoonfoto wordt verkleind in plaats van geweigerd", async ({
   // De bronfoto is fors: ruim boven wat we willen opslaan.
   expect(origineleGrootte).toBeGreaterThan(2 * 1024 * 1024);
 
-  // Geen foutmelding, maar gewoon een voorvertoning.
-  const voorvertoning = page.locator("form img").first();
-  await expect(voorvertoning).toBeVisible({ timeout: 30_000 });
+  await confirmCrop(page);
+
+  // Geen foutmelding, maar een opgeslagen foto.
+  const veld = page.locator('input[name="imageUrl"]');
+  await expect.poll(() => veld.inputValue(), { timeout: 30_000 }).not.toBe("");
   await expect(page.getByText(/te groot/i)).toHaveCount(0);
 
   // En wat er is opgeslagen is een stuk kleiner dan het origineel.
-  const bron = await voorvertoning.getAttribute("src");
+  const bron = await veld.inputValue();
   const opgeslagenGrootte = await page.evaluate(async (url) => {
-    const res = await fetch(url!);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`de foto is niet op te halen: ${res.status}`);
     return (await res.blob()).size;
   }, bron);
 

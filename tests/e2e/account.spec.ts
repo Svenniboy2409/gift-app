@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createList, register } from "./helpers";
+import { confirmCrop, createList, register } from "./helpers";
 
 /**
  * Het accounttabblad: je eigen profiel zoals anderen het zien, met de lijsten
@@ -61,6 +61,9 @@ test("foto en bio komen op je openbare profiel te staan", async ({ page }) => {
     buffer: PNG,
   });
 
+  // Een profielfoto snijd je eerst bij; die moet vierkant zijn.
+  await confirmCrop(page);
+
   // Wachten tot de upload klaar is: dan staat de foto in het formulier.
   const voorvertoning = page.locator("form img").first();
   await expect(voorvertoning).toBeVisible({ timeout: 15_000 });
@@ -82,4 +85,55 @@ test("foto en bio komen op je openbare profiel te staan", async ({ page }) => {
   await page.goto(profiel!);
   await expect(page.getByText("Houdt van koken")).toBeVisible();
   await expect(page.getByText("Kerst")).toBeVisible();
+});
+
+test("een profielfoto wordt altijd vierkant opgeslagen", async ({ page }) => {
+  await register(page, "Vierkant", "sq");
+  await page.goto("/settings");
+
+  // Een liggende foto van 600 bij 300: die kán niet zomaar vierkant zijn.
+  await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 300;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#c4633c";
+    ctx.fillRect(0, 0, 600, 300);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(20, 20, 100, 100);
+
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b!), "image/png"),
+    );
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], "breed.png", { type: "image/png" }));
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+
+  await confirmCrop(page);
+
+  // Het verborgen veld houdt het uiteindelijke adres vast; dat is preciezer
+  // dan de eerste de beste afbeelding op het scherm.
+  const veld = page.locator('input[name="avatarUrl"]');
+  await expect
+    .poll(() => veld.inputValue(), { timeout: 15_000 })
+    .not.toBe("");
+  const bron = await veld.inputValue();
+
+  const maten = await page.evaluate(
+    (url) =>
+      new Promise<{ w: number; h: number }>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => reject(new Error("kan de foto niet laden"));
+        img.src = url!;
+      }),
+    bron,
+  );
+
+  // Afrondingsverschil van één beeldpunt mag; scheef zijn niet.
+  expect(Math.abs(maten.w - maten.h)).toBeLessThanOrEqual(1);
+  expect(maten.w).toBeLessThan(600);
 });

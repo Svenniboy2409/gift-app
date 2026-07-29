@@ -95,13 +95,22 @@ function otherAccess(message: string, tried: Access): Access | null {
   return tried === "public" ? "private" : "public";
 }
 
-/** Het pad waarop een besloten foto bij ons op te halen is. */
+/** Het pad waarop een foto bij ons op te halen is. */
 export function photoPath(pathname: string) {
   return `/api/photo/${pathname}`;
 }
 
-/** Alleen onze eigen bestandsnamen mag de fotoroute ophalen. */
-export const PHOTO_PATHNAME = /^gifts\/[a-f0-9]{24}\.(jpg|png|webp|gif|avif)$/;
+/**
+ * Alleen onze eigen bestandsnamen mag de fotoroute ophalen: `gifts/…` staat in
+ * een besloten Blob-store, `local/…` op de schijf van de server zelf.
+ */
+export const PHOTO_BLOB = /^gifts\/[a-f0-9]{24}\.(jpg|png|webp|gif|avif)$/;
+export const PHOTO_LOCAL = /^local\/[a-f0-9]{24}\.(jpg|png|webp|gif|avif)$/;
+
+/** Waar de foto's staan als er geen Blob-opslag is. */
+export function localPhotoDirectory() {
+  return path.join(process.cwd(), "public", "uploads");
+}
 
 /** Een geldige PNG van 1×1, voor de zelftest hieronder. */
 const PIXEL = Buffer.from(
@@ -196,7 +205,7 @@ export async function storeImage(
     );
   }
 
-  const directory = path.join(process.cwd(), "public", "uploads");
+  const directory = localPhotoDirectory();
   try {
     await mkdir(directory, { recursive: true });
     await writeFile(path.join(directory, name), bytes);
@@ -213,5 +222,8 @@ export async function storeImage(
     }
     throw error;
   }
-  return `/uploads/${name}`;
+
+  // Bewust niet /uploads/… : een bestand dat ná de build in public/ belandt
+  // wordt door `next start` niet meer geserveerd. Via onze eigen route wel.
+  return photoPath(`local/${name}`);
 }

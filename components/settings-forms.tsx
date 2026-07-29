@@ -11,6 +11,7 @@ import { compressImage } from "@/lib/image-compress";
 import { useOrigin } from "@/lib/hooks";
 import { uploadErrorKey } from "@/lib/upload-errors";
 import { Avatar } from "@/components/avatar";
+import { ImageCropper } from "@/components/image-cropper";
 import { LOCALES, type MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/client";
 import { normalizeHandle } from "@/lib/validation";
@@ -68,10 +69,26 @@ export function ProfileForm({
   );
   const [handleValue, setHandleValue] = useState(handle);
   const [photo, setPhoto] = useState(avatarUrl ?? "");
+  /** De gekozen foto, zolang je hem nog aan het bijsnijden bent. */
+  const [cropping, setCropping] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const origin = useOrigin();
+
+  /**
+   * Eerst leesbaar maken — een foto uit de iPhone-galerij is HEIC en die krijgt
+   * de browser niet zomaar op het scherm — en dan pas het bijsnijden aanbieden.
+   */
+  async function choose(file: File) {
+    setUploading(true);
+    setPhotoError(null);
+    try {
+      setCropping(await compressImage(file));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   /** Dezelfde weg als een productfoto: eerst verkleinen, dan versturen. */
   async function uploadPhoto(file: File) {
@@ -134,11 +151,24 @@ export function ProfileForm({
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
-            if (file) void uploadPhoto(file);
+            if (file) void choose(file);
             event.target.value = "";
           }}
         />
         {photoError && <p className="mt-1 text-xs text-danger">{photoError}</p>}
+
+        {/* Een profielfoto komt in een rondje te staan, dus die moet vierkant. */}
+        {cropping && (
+          <ImageCropper
+            file={cropping}
+            ratio={1}
+            onCancel={() => setCropping(null)}
+            onDone={(cropped) => {
+              setCropping(null);
+              void uploadPhoto(cropped);
+            }}
+          />
+        )}
       </div>
 
       <div>

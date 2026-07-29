@@ -85,12 +85,21 @@ describe("besloten Blob-store", () => {
 
 describe("de fotoroute laat alleen eigen bestandsnamen door", () => {
   it("herkent onze namen en weert de rest", async () => {
-    const { PHOTO_PATHNAME } = await import("@/lib/storage");
+    const { PHOTO_BLOB, PHOTO_LOCAL } = await import("@/lib/storage");
 
-    expect(PHOTO_PATHNAME.test("gifts/0123456789abcdef01234567.jpg")).toBe(true);
-    expect(PHOTO_PATHNAME.test("gifts/0123456789abcdef01234567.webp")).toBe(true);
-    expect(PHOTO_PATHNAME.test("facturen/geheim.pdf")).toBe(false);
-    expect(PHOTO_PATHNAME.test("gifts/../geheim.jpg")).toBe(false);
-    expect(PHOTO_PATHNAME.test("gifts/kort.jpg")).toBe(false);
+    expect(PHOTO_BLOB.test("gifts/0123456789abcdef01234567.jpg")).toBe(true);
+    expect(PHOTO_BLOB.test("gifts/0123456789abcdef01234567.webp")).toBe(true);
+    expect(PHOTO_LOCAL.test("local/0123456789abcdef01234567.jpg")).toBe(true);
+
+    for (const pad of [
+      "facturen/geheim.pdf",
+      "gifts/../geheim.jpg",
+      "gifts/kort.jpg",
+      "local/../../etc/passwd",
+      "local/0123456789abcdef01234567.txt",
+    ]) {
+      expect(PHOTO_BLOB.test(pad), pad).toBe(false);
+      expect(PHOTO_LOCAL.test(pad), pad).toBe(false);
+    }
   });
 });

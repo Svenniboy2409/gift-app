@@ -41,3 +41,8 @@ export async function openManualGiftForm(page: Page) {
   await openGiftSheet(page);
   await page.getByRole("button", { name: "Of vul het zelf in" }).click();
 }
+
+/** Bevestigt het bijsnijden dat na het kiezen van een foto opent. */
+export async function confirmCrop(page: Page) {
+  await page.getByRole("button", { name: "Bijsnijden", exact: true }).click();
+}

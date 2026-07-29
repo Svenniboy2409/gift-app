@@ -34,6 +34,8 @@ maar de eigenaar van de lijst ziet dat nooit.
 - **Je account** (`/account`) laat je eigen profiel zien zoals anderen het
   krijgen, met daaronder weggeklapt de lijsten die je juist niet deelt. De
   instellingen zitten achter het tandwiel linksboven.
+- **Foto's bijsnijden** voor je ze opslaat. Een profielfoto ligt vast op 1:1,
+  want hij komt in een rondje te staan; bij een productfoto is het kader vrij.
 - **Nederlands en Engels**, lichte en donkere modus.
 
 ## Snel starten
@@ -144,6 +146,10 @@ ziet de draaiende app hem ook.
 Kies je bij het koppelen een eigen voorvoegsel, dan heet de variabele
 bijvoorbeeld `FOTOS_READ_WRITE_TOKEN`. Dat mag: de app zoekt zelf naar elke
 variabele op `_READ_WRITE_TOKEN` met een Blob-sleutel erin.
+
+Zonder Blob gaan foto's naar `public/uploads` op de server zelf. Ze worden dan
+uitgeserveerd via `/api/photo/local/…` en niet als gewoon bestand: wat ná de
+build in `public/` belandt, serveert `next start` namelijk niet meer.
 
 Of je store nu op **openbaar** of op **besloten** staat maakt ook niet uit. Bij
 een openbare store krijgen foto's een adres bij Vercel; bij een besloten store
