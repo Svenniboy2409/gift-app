@@ -1,5 +1,5 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
-import { createList, register } from "./helpers";
+import { expect, test, type Browser } from "@playwright/test";
+import { createList, register, setVisibility } from "./helpers";
 
 /**
  * Vrienden: uitnodigen (opzoeken én via een link), accepteren, en wat dat
@@ -20,14 +20,6 @@ async function persoon(browser: Browser, naam: string, prefix: string) {
     .getByRole("link", { name: /^@/ })
     .getAttribute("href");
   return { context, page, handle: profiel!.replace("/u/", "") };
-}
-
-/** Zet de zichtbaarheid van de lijst waar je in staat. */
-async function setVisibility(page: Page, label: string) {
-  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
-  await page.getByText(label, { exact: true }).click();
-  await page.getByRole("button", { name: "Opslaan" }).click();
-  await expect(page.getByText("Opgeslagen.")).toBeVisible();
 }
 
 test("iemand opzoeken, uitnodigen en accepteren", async ({ browser }) => {

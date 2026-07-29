@@ -42,14 +42,41 @@ export default async function ListPage({
     <div className="space-y-6">
       <div>
         <Link href="/dashboard" className="btn btn-ghost btn-sm -ml-3 mb-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="size-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="size-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           {t("list.back")}
         </Link>
 
-        <div className={`cover-${list.coverColor} relative overflow-hidden rounded-2xl p-5 sm:p-8`}>
+        <div
+          className={`cover-${list.coverColor} relative overflow-hidden rounded-2xl p-5 sm:p-8`}
+        >
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+          {/* De instellingen horen bij de lijst, dus staan ze op de omslag. */}
+          <ListSettings
+            listId={list.id}
+            initial={{
+              title: list.title,
+              description: list.description ?? "",
+              occasion: list.occasion,
+              eventDate: list.eventDate
+                ? list.eventDate.toISOString().slice(0, 10)
+                : "",
+              coverColor: list.coverColor,
+              visibility: list.visibility,
+            }}
+          />
           <div className="relative">
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d]">
               {t(`occasion.${list.occasion}` as "occasion.OTHER")}
@@ -84,20 +111,6 @@ export default async function ListPage({
       />
 
       <GiftManager listId={list.id} gifts={list.gifts} />
-
-      <ListSettings
-        listId={list.id}
-        initial={{
-          title: list.title,
-          description: list.description ?? "",
-          occasion: list.occasion,
-          eventDate: list.eventDate
-            ? list.eventDate.toISOString().slice(0, 10)
-            : "",
-          coverColor: list.coverColor,
-          visibility: list.visibility,
-        }}
-      />
     </div>
   );
 }

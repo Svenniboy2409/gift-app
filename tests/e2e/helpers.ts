@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 /**
  * Handelingen die in bijna elke test terugkomen. Toevoegen gaat sinds het
@@ -9,7 +9,9 @@ import type { Page } from "@playwright/test";
 export async function register(page: Page, naam: string, prefix = "e2e") {
   await page.goto("/register");
   await page.getByLabel("Naam").fill(naam);
-  await page.getByLabel("E-mailadres").fill(`${prefix}-${Date.now()}@example.com`);
+  await page
+    .getByLabel("E-mailadres")
+    .fill(`${prefix}-${Date.now()}@example.com`);
   await page.getByLabel("Wachtwoord").fill("eengoedwachtwoord");
   await page.getByRole("button", { name: "Account maken" }).click();
   await page.waitForURL(/\/dashboard$/);
@@ -29,7 +31,10 @@ export async function openGiftSheet(page: Page) {
   if (await tab.isVisible()) {
     await tab.click();
   } else {
-    await page.getByRole("button", { name: "Cadeau toevoegen" }).first().click();
+    await page
+      .getByRole("button", { name: "Cadeau toevoegen" })
+      .first()
+      .click();
   }
   await page.getByRole("dialog").waitFor();
   // Het paneel schuift omhoog; meten of slepen heeft pas zin als het stilstaat.
@@ -45,4 +50,18 @@ export async function openManualGiftForm(page: Page) {
 /** Bevestigt het bijsnijden dat na het kiezen van een foto opent. */
 export async function confirmCrop(page: Page) {
   await page.getByRole("button", { name: "Bijsnijden", exact: true }).click();
+}
+
+/**
+ * Zet de zichtbaarheid van de lijst waar je in staat. De instellingen zitten
+ * achter het tandwiel op de omslag en openen als paneel.
+ */
+export async function setVisibility(page: Page, label: string) {
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  const paneel = page.getByRole("dialog");
+  await paneel.getByText(label, { exact: true }).click();
+  await paneel.getByRole("button", { name: "Opslaan" }).click();
+
+  // Opslaan sluit het paneel; dat is meteen het bewijs dat het gelukt is.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 }

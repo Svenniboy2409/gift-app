@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/lib/actions/auth";
 import { useI18n } from "@/lib/i18n/client";
@@ -40,16 +40,23 @@ export function ListForm({
   initial,
   submitLabel,
   children,
+  onSaved,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   initial: ListFormValues;
   submitLabel: string;
   children?: React.ReactNode;
+  /** Wordt aangeroepen zodra het opslaan gelukt is. */
+  onSaved?: () => void;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
   const [color, setColor] = useState(initial.coverColor);
   const [visibility, setVisibility] = useState(initial.visibility);
+
+  useEffect(() => {
+    if (state.success) onSaved?.();
+  }, [state.success, onSaved]);
 
   return (
     <form action={formAction} className="space-y-5">
