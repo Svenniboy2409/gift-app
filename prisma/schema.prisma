@@ -23,6 +23,7 @@ enum Occasion {
 
 enum Visibility {
   PRIVATE // alleen de eigenaar
+  FRIENDS // alleen mensen die je als vriend hebt
   LINK // iedereen met de deel-link
   PUBLIC // ook zichtbaar op het profiel van de eigenaar
 }
@@ -37,10 +38,48 @@ model User {
   /// Wordt getoond op je profielpagina, dus zichtbaar voor iedereen.
   avatarUrl    String?
   bio          String?
+  /// Onraadbare code achter je uitnodigingslink; pas aangemaakt bij gebruik.
+  inviteCode   String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  lists List[]
+  lists            List[]
+  friendsAsA       Friendship[]    @relation("FriendA")
+  friendsAsB       Friendship[]    @relation("FriendB")
+  requestsSent     FriendRequest[] @relation("RequestFrom")
+  requestsReceived FriendRequest[] @relation("RequestTo")
+}
+
+/**
+ * Een vriendschap staat één keer in de tabel, niet twee keer. Om te voorkomen
+ * dat hetzelfde stel er twee keer in komt, ligt de volgorde vast: aId is altijd
+ * de kleinste van de twee id's.
+ */
+model Friendship {
+  id        String   @id @default(cuid())
+  aId       String
+  bId       String
+  createdAt DateTime @default(now())
+
+  a User @relation("FriendA", fields: [aId], references: [id], onDelete: Cascade)
+  b User @relation("FriendB", fields: [bId], references: [id], onDelete: Cascade)
+
+  @@unique([aId, bId])
+  @@index([bId])
+}
+
+/// Een verstuurde uitnodiging. Bij accepteren wordt het een Friendship.
+model FriendRequest {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  createdAt DateTime @default(now())
+
+  from User @relation("RequestFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   User @relation("RequestTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId])
+  @@index([toId])
 }
 
 model List {

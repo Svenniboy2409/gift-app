@@ -2,6 +2,7 @@ import "server-only";
 
 import { customAlphabet } from "nanoid";
 import { prisma } from "@/lib/db";
+import { areFriends } from "@/lib/friends";
 import type { Occasion, Visibility } from "@/lib/generated/prisma/enums";
 
 /**
@@ -119,10 +120,15 @@ export async function getListsForOwner(userId: string) {
 }
 
 /** De openbare lijsten van een profiel (`/u/<handle>`). */
-export async function getPublicProfile(handle: string) {
+export async function getPublicProfile(
+  handle: string,
+  /** Wie er kijkt, als diegene is ingelogd. Vrienden zien meer. */
+  viewerId?: string | null,
+) {
   const user = await prisma.user.findUnique({
     where: { handle },
     select: {
+      id: true,
       name: true,
       handle: true,
       avatarUrl: true,
@@ -137,10 +143,37 @@ export async function getPublicProfile(handle: string) {
           eventDate: true,
           coverColor: true,
           shareCode: true,
+          visibility: true,
           _count: { select: { gifts: true } },
         },
       },
     },
   });
-  return user;
+  if (!user) return null;
+
+  // Vrienden krijgen er de vriendenlijsten bij. Dat is een aparte query, zodat
+  // de where hierboven onveranderd blijft voor wie niet ingelogd is.
+  const friend = viewerId ? await areFriends(viewerId, user.id) : false;
+  if (!friend) return { ...user, viewerIsFriend: false };
+
+  const friendLists = await prisma.list.findMany({
+    where: { userId: user.id, visibility: "FRIENDS" },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    select: {
+      title: true,
+      description: true,
+      occasion: true,
+      eventDate: true,
+      coverColor: true,
+      shareCode: true,
+      visibility: true,
+      _count: { select: { gifts: true } },
+    },
+  });
+
+  return {
+    ...user,
+    viewerIsFriend: true,
+    lists: [...user.lists, ...friendLists],
+  };
 }

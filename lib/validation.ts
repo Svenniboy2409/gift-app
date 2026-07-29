@@ -12,7 +12,7 @@ export const OCCASIONS = [
   "OTHER",
 ] as const;
 
-export const VISIBILITIES = ["PRIVATE", "LINK", "PUBLIC"] as const;
+export const VISIBILITIES = ["PRIVATE", "FRIENDS", "LINK", "PUBLIC"] as const;
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "too-short").max(60),

@@ -23,7 +23,8 @@ maar de eigenaar van de lijst ziet dat nooit.
   winkelnaam worden uit de productpagina gehaald. Elk veld blijft bewerkbaar, en
   als het uitlezen mislukt kun je het cadeau gewoon handmatig invullen.
 - **Lijsten per gelegenheid** met datum, aftellen, omslagkleur en
-  zichtbaarheid (privé / iedereen met de link / ook op je profiel).
+  zichtbaarheid (privé / alleen vrienden / iedereen met de link / ook op je
+  profiel).
 - **Cadeau-details:** prioriteit (leuk / graag / heel graag), gewenst aantal en
   een notitie voor maat, kleur of variant.
 - **Claimen zonder account.** Een bezoeker vult alleen een naam in. Bij meerdere
@@ -31,6 +32,12 @@ maar de eigenaar van de lijst ziet dat nooit.
   altijd weer intrekken.
 - **Delen** via een onraadbare link (`/l/<code>`) en een profielpagina
   (`/u/<handle>`) met je profielfoto, een korte bio en je openbare lijsten.
+- **Vrienden** (`/friends`): iemand opzoeken op profielnaam of een
+  uitnodigingslink delen (`/i/<code>`). Vrienden staan bij elkaar met een link
+  naar hun profiel.
+- **Een lijst alleen voor vrienden.** Naast privé, met-de-link en openbaar is er
+  nu ook *alleen mijn vrienden*: die lijst opent alleen voor wie je als vriend
+  hebt — de deel-link is dan niet genoeg — en staat bij hen ook op je profiel.
 - **Je account** (`/account`) laat je eigen profiel zien zoals anderen het
   krijgen, met daaronder weggeklapt de lijsten die je juist niet deelt. De
   instellingen zitten achter het tandwiel linksboven.
@@ -362,6 +369,26 @@ netwerk gebruikt kan worden (SSRF): alleen http/https, DNS-resolutie wordt
 gecontroleerd op privé-, loopback- en link-local-adressen (ook bij elke
 redirect), maximaal 3 redirects, 12 seconden time-out, 2 MB HTML en 5 MB per
 afbeelding. Daarbovenop geldt een rate limit per gebruiker.
+
+## Vrienden en zichtbaarheid
+
+Een vriendschap staat één keer in de tabel, met de twee id's in een vaste
+volgorde (`aId` is altijd de kleinste). Dat scheelt dubbele rijen en maakt "zijn
+deze twee vrienden?" één opzoekactie. Een uitnodiging is een aparte rij die bij
+accepteren verdwijnt; nodigen twee mensen elkaar tegelijk uit, dan worden ze
+meteen vrienden in plaats van op elkaar te blijven wachten.
+
+De vier standen van een lijst:
+
+| Stand | Wie kan hem openen |
+| --- | --- |
+| Alleen ik | niemand anders; de deel-link doet niets |
+| Alleen mijn vrienden | je vrienden, ingelogd; staat ook op je profiel voor hen |
+| Iedereen met de link | iedereen die de link heeft, zonder account |
+| Ook op mijn profiel | idem, plus zichtbaar op `/u/<handle>` |
+
+De controle zit in de datalaag (`getListForVisitor`, `getPublicProfile`), niet in
+de UI: een vriendenlijst opvragen zonder vriend te zijn levert gewoon niets op.
 
 ## Hoe de verrassing bewaakt wordt
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { areFriends } from "@/lib/friends";
 
 /**
  * BELANGRIJK — de verrassing bewaken.
@@ -113,6 +114,8 @@ export type VisitorList = {
 export async function getListForVisitor(
   shareCode: string,
   claimerToken: string | null,
+  /** Wie er kijkt, als diegene is ingelogd. Nodig voor vriendenlijsten. */
+  viewerId?: string | null,
 ): Promise<VisitorList | null> {
   const list = await prisma.list.findUnique({
     where: { shareCode },
@@ -125,6 +128,7 @@ export async function getListForVisitor(
       coverColor: true,
       shareCode: true,
       visibility: true,
+      userId: true,
       user: { select: { name: true, handle: true } },
       gifts: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
@@ -144,6 +148,13 @@ export async function getListForVisitor(
   });
 
   if (!list || list.visibility === "PRIVATE") return null;
+
+  // Een vriendenlijst opent alleen voor de eigenaar zelf en voor zijn vrienden;
+  // de deel-link is daar dus niet genoeg.
+  if (list.visibility === "FRIENDS") {
+    if (!viewerId) return null;
+    if (!(await areFriends(viewerId, list.userId))) return null;
+  }
 
   return {
     id: list.id,

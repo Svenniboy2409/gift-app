@@ -43,6 +43,37 @@ function ListsIcon({ active }: { active: boolean }) {
   );
 }
 
+function SocialIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className="size-6"
+      aria-hidden="true"
+    >
+      <circle
+        cx="9"
+        cy="8"
+        r="3.2"
+        fill="currentColor"
+        fillOpacity={active ? 0.18 : 0}
+      />
+      <path
+        strokeLinecap="round"
+        d="M2.5 19a6.5 6.5 0 0 1 13 0"
+        fill="currentColor"
+        fillOpacity={active ? 0.18 : 0}
+      />
+      <path
+        strokeLinecap="round"
+        d="M16.5 5.5a3 3 0 0 1 0 5.4M18 19a6.6 6.6 0 0 0-1.6-4.3"
+      />
+    </svg>
+  );
+}
+
 function AccountIcon({ active }: { active: boolean }) {
   return (
     <svg
@@ -53,7 +84,13 @@ function AccountIcon({ active }: { active: boolean }) {
       className="size-6"
       aria-hidden="true"
     >
-      <circle cx="12" cy="8" r="3.5" fillOpacity={active ? 0.18 : 0} fill="currentColor" />
+      <circle
+        cx="12"
+        cy="8"
+        r="3.5"
+        fillOpacity={active ? 0.18 : 0}
+        fill="currentColor"
+      />
       <path
         strokeLinecap="round"
         d="M4.5 20a7.5 7.5 0 0 1 15 0"
@@ -85,21 +122,36 @@ export function BottomNav() {
   const { openGift } = useSheets();
 
   const onLists = pathname === "/dashboard" || pathname.startsWith("/lists");
+  const onSocial = pathname.startsWith("/friends");
   const onAccount =
     pathname.startsWith("/account") || pathname.startsWith("/settings");
 
   return (
     <nav className="tabbar md:hidden" aria-label={t("nav.main")}>
-      <Link
-        href="/dashboard"
-        className="tabbar-item"
-        aria-current={onLists ? "page" : undefined}
-      >
-        <ListsIcon active={onLists} />
-        {t("nav.lists")}
-      </Link>
+      {/* Twee groepen met evenveel ruimte houden de plusknop precies in het
+          midden, ook nu er links twee tabbladen staan en rechts één. */}
+      <div className="flex flex-1 justify-around">
+        <Link
+          href="/dashboard"
+          className="tabbar-item"
+          aria-current={onLists ? "page" : undefined}
+        >
+          <ListsIcon active={onLists} />
+          {t("nav.lists")}
+        </Link>
 
-      <div className="flex flex-1 justify-center">
+        <Link
+          href="/friends"
+          className="tabbar-item"
+          aria-current={onSocial ? "page" : undefined}
+        >
+          <SocialIcon active={onSocial} />
+          {t("nav.social")}
+        </Link>
+      </div>
+
+      {/* De plusknop telt niet mee als tabblad. */}
+      <div className="flex w-16 shrink-0 justify-center">
         <button
           type="button"
           onClick={openGift}
@@ -110,14 +162,16 @@ export function BottomNav() {
         </button>
       </div>
 
-      <Link
-        href="/account"
-        className="tabbar-item"
-        aria-current={onAccount ? "page" : undefined}
-      >
-        <AccountIcon active={onAccount} />
-        {t("nav.account")}
-      </Link>
+      <div className="flex flex-1 justify-around">
+        <Link
+          href="/account"
+          className="tabbar-item max-w-24"
+          aria-current={onAccount ? "page" : undefined}
+        >
+          <AccountIcon active={onAccount} />
+          {t("nav.account")}
+        </Link>
+      </div>
     </nav>
   );
 }

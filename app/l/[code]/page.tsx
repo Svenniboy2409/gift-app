@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { getListForVisitor } from "@/lib/gifts";
 import { readClaimerName, readClaimerToken } from "@/lib/claims";
 import { getTranslator } from "@/lib/i18n/server";
@@ -35,7 +36,8 @@ export default async function SharedListPage({
     getTranslator(),
   ]);
 
-  const list = await getListForVisitor(code, claimerToken);
+  const viewer = await getCurrentUser();
+  const list = await getListForVisitor(code, claimerToken, viewer?.id);
   if (!list) notFound();
 
   const days = list.eventDate ? daysUntil(list.eventDate) : null;

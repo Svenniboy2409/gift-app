@@ -43,6 +43,9 @@ export async function SiteHeader() {
             <Link href="/dashboard" className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.dashboard")}
             </Link>
+            <Link href="/friends" className="btn btn-ghost btn-sm hidden md:inline-flex">
+              {t("nav.social")}
+            </Link>
             <Link href="/account" className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.account")}
             </Link>

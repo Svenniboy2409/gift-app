@@ -38,6 +38,7 @@ export function SharePanel({
   const shareUrl = `${origin}/l/${shareCode}`;
   const profileUrl = `${origin}/u/${handle}`;
   const disabled = visibility === "PRIVATE";
+  const friendsOnly = visibility === "FRIENDS";
 
   async function copy() {
     try {
@@ -80,7 +81,11 @@ export function SharePanel({
     <section className="card p-5">
       <h2 className="font-semibold text-ink">{t("share.title")}</h2>
       <p className="mt-1 text-sm text-muted">
-        {disabled ? t("share.disabled") : t("share.body")}
+        {disabled
+          ? t("share.disabled")
+          : friendsOnly
+            ? t("share.friendsOnly")
+            : t("share.body")}
       </p>
 
       {!disabled && (

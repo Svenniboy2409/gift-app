@@ -55,9 +55,13 @@ export function ListCard({
         <span className="absolute left-4 top-4 rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d] backdrop-blur-sm">
           {t(`occasion.${list.occasion}` as "occasion.OTHER")}
         </span>
-        {list.visibility === "PRIVATE" && (
+        {(list.visibility === "PRIVATE" || list.visibility === "FRIENDS") && (
           <span className="absolute right-4 top-4 rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d] backdrop-blur-sm">
-            {t("visibility.PRIVATE")}
+            {t(
+              list.visibility === "PRIVATE"
+                ? "visibility.PRIVATE"
+                : "visibility.FRIENDS",
+            )}
           </span>
         )}
       </div>

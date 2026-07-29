@@ -20,7 +20,11 @@ export default async function AccountPage() {
   ]);
 
   const publicLists = lists.filter((list) => list.visibility === "PUBLIC");
-  const hiddenLists = lists.filter((list) => list.visibility !== "PUBLIC");
+  const friendLists = lists.filter((list) => list.visibility === "FRIENDS");
+  // De rest staat voor niemand op je profiel: privé en alleen-met-de-link.
+  const hiddenLists = lists.filter(
+    (list) => list.visibility !== "PUBLIC" && list.visibility !== "FRIENDS",
+  );
 
   const toCard = (list: (typeof lists)[number]) => ({
     title: list.title,
@@ -104,6 +108,25 @@ export default async function AccountPage() {
           </div>
         )}
       </section>
+
+      {friendLists.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold tracking-tight text-ink">
+            {t("social.friendLists")}
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {friendLists.map((list) => (
+              <ListCard
+                key={list.id}
+                href={`/lists/${list.id}`}
+                t={t}
+                locale={locale}
+                list={toCard(list)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {hiddenLists.length > 0 && (
         <HiddenLists count={hiddenLists.length}>

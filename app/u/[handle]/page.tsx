@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { getPublicProfile } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
+import { relationTo } from "@/lib/friends";
 import { Avatar } from "@/components/avatar";
+import { FriendButton } from "@/components/people";
 import { ListCard } from "@/components/list-card";
 
 export async function generateMetadata({
@@ -25,11 +28,16 @@ export default async function ProfilePage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
+  const viewer = await getCurrentUser();
   const [profile, { t, locale }] = await Promise.all([
-    getPublicProfile(handle.toLowerCase()),
+    getPublicProfile(handle.toLowerCase(), viewer?.id),
     getTranslator(),
   ]);
   if (!profile) notFound();
+
+  // Kijk je bij iemand anders, dan hoort daar een knop bij om vrienden te
+  // worden — of de stand van zaken als dat al loopt.
+  const relation = viewer ? await relationTo(viewer.id, profile.id) : null;
 
   return (
     <>
@@ -50,6 +58,11 @@ export default async function ProfilePage({
             <p className="mt-3 max-w-md text-sm leading-relaxed text-muted sm:text-base">
               {profile.bio}
             </p>
+          )}
+          {relation && relation !== "self" && (
+            <div className="mt-4">
+              <FriendButton userId={profile.id} relation={relation} />
+            </div>
           )}
         </div>
 
@@ -72,6 +85,8 @@ export default async function ProfilePage({
                   eventDate: list.eventDate,
                   coverColor: list.coverColor,
                   shareCode: list.shareCode,
+                  // Zo zie je als vriend meteen waarom je deze lijst kunt zien.
+                  visibility: list.visibility,
                   giftCount: list._count.gifts,
                 }}
               />

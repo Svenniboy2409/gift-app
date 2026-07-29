@@ -43,6 +43,13 @@ test("de navigatiebalk staat onderaan en brengt je naar beide tabbladen", async 
     "page",
   );
 
+  await balk.getByRole("link", { name: "Sociaal" }).click();
+  await page.waitForURL(/\/friends$/);
+  await expect(balk.getByRole("link", { name: "Sociaal" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
   await balk.getByRole("link", { name: "Lijsten" }).click();
   await page.waitForURL(/\/dashboard$/);
 });
