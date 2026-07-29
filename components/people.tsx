@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
+import { Children, useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { FormState } from "@/lib/actions/auth";
 import {
@@ -15,7 +15,11 @@ import { useOrigin } from "@/lib/hooks";
 import type { FriendProfile, Relation } from "@/lib/friends";
 import { Avatar } from "@/components/avatar";
 
-/** Naam, profielnaam en foto — met rechts ruimte voor knoppen. */
+/**
+ * Naam, profielnaam en foto — met rechts ruimte voor knoppen. Twee knoppen
+ * naast een naam past niet op een telefoon: dan knijpt de naam weg tot een paar
+ * letters. Vanaf twee knoppen krijgen ze daarom een eigen regel eronder.
+ */
 function PersonRow({
   person,
   children,
@@ -39,8 +43,10 @@ function PersonRow({
     </>
   );
 
+  const acties = Children.count(children);
+
   return (
-    <li className="card flex items-center gap-3 p-3">
+    <li className="card flex flex-wrap items-center gap-3 p-3">
       {link ? (
         <Link
           href={`/u/${person.handle}`}
@@ -51,7 +57,15 @@ function PersonRow({
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-3">{inner}</span>
       )}
-      {children}
+      {acties > 0 && (
+        <span
+          className={`flex shrink-0 items-center justify-end gap-2 ${
+            acties > 1 ? "w-full sm:w-auto" : ""
+          }`}
+        >
+          {children}
+        </span>
+      )}
     </li>
   );
 }

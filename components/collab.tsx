@@ -130,11 +130,15 @@ export function ListCollab({
             className="flex items-center gap-3 rounded-xl bg-sunken p-2.5"
           >
             <Avatar name={invite.name} className="size-9" />
-            <span className="min-w-0 flex-1 truncate text-sm text-muted">
-              {invite.name}
-            </span>
-            <span className="chip hidden sm:inline-flex">
-              {t("social.waiting")}
+            {/* De status onder de naam, want naast de naam valt hij op een
+                telefoon buiten beeld. */}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-ink">
+                {invite.name}
+              </span>
+              <span className="block truncate text-xs text-muted">
+                {t("social.waiting")}
+              </span>
             </span>
             {isOwner && (
               <button
@@ -268,7 +272,10 @@ export function ListInvites({
       </h2>
       <ul className="mt-3 space-y-2">
         {invites.map((invite) => (
-          <li key={invite.id} className="card flex items-center gap-3 p-3">
+          <li
+            key={invite.id}
+            className="card flex flex-wrap items-center gap-3 p-3"
+          >
             <span
               className={`cover-${invite.list.coverColor} size-12 shrink-0 rounded-xl`}
             />
@@ -280,22 +287,25 @@ export function ListInvites({
                 {t("collab.invitedBy", { name: invite.list.user.name })}
               </span>
             </span>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              disabled={busy}
-              onClick={() => run(acceptListInviteAction, invite.id)}
-            >
-              {t("social.accept")}
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={busy}
-              onClick={() => run(removeListInviteAction, invite.id)}
-            >
-              {t("social.decline")}
-            </button>
+            {/* Op een telefoon eronder, anders knijpen ze de naam van de lijst weg. */}
+            <span className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={busy}
+                onClick={() => run(acceptListInviteAction, invite.id)}
+              >
+                {t("social.accept")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={busy}
+                onClick={() => run(removeListInviteAction, invite.id)}
+              >
+                {t("social.decline")}
+              </button>
+            </span>
           </li>
         ))}
       </ul>
