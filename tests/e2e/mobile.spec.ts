@@ -91,6 +91,66 @@ test("een cadeau kan in twee lijsten tegelijk", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("het paneel gaat dicht door de bovenrand omlaag te slepen", async ({
+  page,
+}) => {
+  await register(page, "Sleper", "mob9");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  const greep = await paneel.locator("h2").boundingBox();
+  expect(greep).not.toBeNull();
+
+  // Van de titelbalk af naar beneden trekken, ruim voorbij de drempel — maar
+  // binnen het scherm, anders komen de bewegingen niet aan.
+  const hoogte = page.viewportSize()!.height;
+  const x = greep!.x + greep!.width / 2;
+  const y = greep!.y + greep!.height / 2;
+  const eind = Math.min(y + 200, hoogte - 5);
+  expect(eind - y).toBeGreaterThan(90);
+
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 40, { steps: 5 });
+  await page.mouse.move(x, eind, { steps: 10 });
+  await page.mouse.up();
+
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("een klein zetje laat het paneel terugveren", async ({ page }) => {
+  await register(page, "Terugveren", "mob10");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  const greep = await paneel.locator("h2").boundingBox();
+
+  const x = greep!.x + greep!.width / 2;
+  const y = greep!.y + greep!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 30, { steps: 5 });
+  await page.mouse.up();
+
+  // Onder de drempel: hij hoort gewoon te blijven staan.
+  await page.waitForTimeout(400);
+  await expect(paneel).toBeVisible();
+});
+
+test("naast het paneel tikken sluit het ook", async ({ page }) => {
+  await register(page, "Naasttikker", "mob11");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  await expect(page.getByRole("dialog")).toBeVisible();
+
+  // Boven het paneel ligt de achtergrond; daarop tikken sluit hem.
+  await page.getByRole("button", { name: "Sluiten" }).click({ position: { x: 10, y: 10 } });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("zonder gekozen lijst kun je niet opslaan", async ({ page }) => {
   await register(page, "Geen lijst", "mob4");
   await createList(page, "Verjaardag");

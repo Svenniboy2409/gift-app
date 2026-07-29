@@ -417,17 +417,32 @@ summary,
 
   /* --- Schuifpaneel ----------------------------------------------------- */
 
+  /* `backwards` in plaats van `both`: na afloop laat de animatie het paneel
+     weer los, zodat slepen met de vinger de stand kan overnemen. */
   .sheet {
-    animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) backwards;
+  }
+
+  /* Sluiten gaat verder vanaf waar je hem losliet; zonder slepen is dat 0. */
+  .sheet-out {
+    animation: sheet-down 0.24s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
 
   .sheet-backdrop {
-    animation: fade-in 0.2s ease-out both;
+    animation: fade-in 0.2s ease-out backwards;
+  }
+
+  .sheet-backdrop-out {
+    animation: fade-out 0.24s ease-in forwards;
   }
 
   @media (min-width: 640px) {
     .sheet {
-      animation: fade-in-up 0.2s ease-out both;
+      animation: fade-in-up 0.2s ease-out backwards;
+    }
+
+    .sheet-out {
+      animation: fade-out-down 0.18s ease-in forwards;
     }
   }
 
@@ -462,12 +477,41 @@ summary,
   }
 }
 
+@keyframes sheet-down {
+  from {
+    transform: translateY(var(--sheet-from, 0px));
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 

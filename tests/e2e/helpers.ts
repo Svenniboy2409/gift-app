@@ -32,6 +32,8 @@ export async function openGiftSheet(page: Page) {
     await page.getByRole("button", { name: "Cadeau toevoegen" }).first().click();
   }
   await page.getByRole("dialog").waitFor();
+  // Het paneel schuift omhoog; meten of slepen heeft pas zin als het stilstaat.
+  await page.waitForTimeout(400);
 }
 
 /** Opent het paneel en kiest meteen voor zelf invullen. */

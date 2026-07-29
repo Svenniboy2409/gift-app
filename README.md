@@ -380,7 +380,9 @@ op gebouwd; het bureaublad krijgt vanaf `md` de bredere variant.
   aangevinkt — daaronder plak je de link of vul je het zelf in. Een nieuwe lijst
   maken gaat via hetzelfde soort paneel, te openen met het plusje naast "Mijn
   lijsten" of het gestippelde vak onderaan de rij. Op een breed scherm staat het
-  paneel gecentreerd in beeld in plaats van tegen de onderrand.
+  paneel gecentreerd in beeld in plaats van tegen de onderrand. Sluiten gaat
+  door de bovenrand omlaag te slepen, naast het paneel te tikken of met Escape;
+  bij slepen loopt de beweging door vanaf de plek waar je losliet.
 - **Veilige zones**: `viewport-fit=cover` plus `env(safe-area-inset-*)`, zodat
   niets onder de inkeping of de streep van de iPhone verdwijnt.
 - **Invoervelden op 16 px.** Onder die grens zoomt Safari op iPhone het scherm
