@@ -1,4 +1,4 @@
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import {
   acceptInvite,
   createList,
@@ -23,6 +23,19 @@ async function persoon(browser: Browser, naam: string, prefix: string) {
     .getByRole("link", { name: /^@/ })
     .getAttribute("href");
   return { context, page, handle: profiel!.replace("/u/", "") };
+}
+
+/**
+ * Nodigt iemand uit vanuit de instellingen van de lijst waar je in staat, en
+ * sluit het paneel pas als de uitnodiging er echt staat — anders sluit je hem
+ * terwijl de serveractie nog loopt.
+ */
+async function nodigUit(page: Page, naam: RegExp) {
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  const paneel = page.getByRole("dialog");
+  await paneel.getByRole("button", { name: naam }).click();
+  await expect(paneel.getByText("Wacht op antwoord")).toBeVisible();
+  await page.keyboard.press("Escape");
 }
 
 /** Twee mensen die elkaar als vriend hebben. */
@@ -98,12 +111,7 @@ test("alleen de eigenaar kan de instellingen aanpassen", async ({ browser }) => 
   await createList(een.page, "Gedeelde lijst");
   const pad = new URL(een.page.url()).pathname;
 
-  await een.page.getByRole("button", { name: "Instellingen van de lijst" }).click();
-  await een.page
-    .getByRole("dialog")
-    .getByRole("button", { name: /Helper Samen/ })
-    .click();
-  await een.page.keyboard.press("Escape");
+  await nodigUit(een.page, /Helper Samen/);
 
   await twee.page.goto("/friends");
   await acceptInvite(twee.page);
@@ -124,6 +132,64 @@ test("alleen de eigenaar kan de instellingen aanpassen", async ({ browser }) => 
 
   await twee.page.goto(`/u/${twee.handle}`);
   await expect(twee.page.getByText("Gedeelde lijst")).toBeVisible();
+
+  await een.context.close();
+  await twee.context.close();
+});
+
+test("een deelnemer haalt de lijst van zijn eigen profiel", async ({
+  browser,
+}) => {
+  const { een, twee } = await vrienden(browser, "col4");
+
+  await een.page.goto("/dashboard");
+  await createList(een.page, "Op ons profiel");
+  const pad = new URL(een.page.url()).pathname;
+
+  await nodigUit(een.page, /Helper Samen/);
+
+  await twee.page.goto("/friends");
+  await acceptInvite(twee.page);
+
+  // De eigenaar zet hem op ieders profiel.
+  await een.page.reload();
+  await setVisibility(een.page, "Ook op mijn profiel");
+
+  await twee.page.goto(`/u/${twee.handle}`);
+  await expect(twee.page.getByText("Op ons profiel")).toBeVisible();
+
+  // De deelnemer haalt hem van zijn eigen profiel.
+  await twee.page.goto(pad);
+  await twee.page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  const paneel = twee.page.getByRole("dialog");
+  await paneel.getByRole("button", { name: "Verbergen op mijn profiel" }).click();
+  await expect(
+    paneel.getByRole("button", { name: "Weer op mijn profiel zetten" }),
+  ).toBeVisible();
+
+  await twee.page.goto(`/u/${twee.handle}`);
+  await expect(twee.page.getByText("Op ons profiel")).toHaveCount(0);
+
+  // Bij de eigenaar staat hij er nog gewoon op, ook voor de deelnemer die hem
+  // net verborgen heeft.
+  await twee.page.goto(`/u/${een.handle}`);
+  await expect(twee.page.getByText("Op ons profiel")).toBeVisible();
+
+  // En terugzetten kan.
+  await twee.page.goto(pad);
+  await twee.page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  await twee.page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Weer op mijn profiel zetten" })
+    .click();
+  await expect(
+    twee.page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Verbergen op mijn profiel" }),
+  ).toBeVisible();
+
+  await twee.page.goto(`/u/${twee.handle}`);
+  await expect(twee.page.getByText("Op ons profiel")).toBeVisible();
 
   await een.context.close();
   await twee.context.close();

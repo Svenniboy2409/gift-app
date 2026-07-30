@@ -104,7 +104,7 @@ export async function regenerateShareCode(userId: string, listId: string) {
  * iemand anders aan werkt.
  */
 export async function getListsForOwner(userId: string) {
-  return prisma.list.findMany({
+  const lists = await prisma.list.findMany({
     where: { OR: [{ userId }, { members: { some: { userId } } }] },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
     select: {
@@ -119,17 +119,26 @@ export async function getListsForOwner(userId: string) {
       createdAt: true,
       /** Van jou, of doe je alleen mee? Dat scheelt in wat je mag. */
       userId: true,
+      /** Alleen je eigen deelname; hooguit één rij. */
+      members: { where: { userId }, select: { hiddenOnProfile: true } },
       _count: { select: { gifts: true } },
     },
   });
+
+  return lists.map(({ members, ...list }) => ({
+    ...list,
+    /** Meegedaan, maar van je eigen profiel gehaald. */
+    hiddenOnMyProfile: members[0]?.hiddenOnProfile ?? false,
+  }));
 }
 
 /**
  * De lijsten die op een profiel horen (`/u/<handle>`).
  *
  * Dat zijn niet alleen de lijsten van die persoon zelf, maar ook de lijsten
- * waar hij samen met iemand anders aan werkt — die staan op ieders profiel.
- * Vrienden zien er de vriendenlijsten bij.
+ * waar hij samen met iemand anders aan werkt — die staan op ieders profiel,
+ * tenzij een deelnemer hem van zijn eigen profiel heeft gehaald. Vrienden zien
+ * er de vriendenlijsten bij.
  */
 export async function getPublicProfile(
   handle: string,
@@ -146,7 +155,10 @@ export async function getPublicProfile(
 
   const lists = await prisma.list.findMany({
     where: {
-      OR: [{ userId: user.id }, { members: { some: { userId: user.id } } }],
+      OR: [
+        { userId: user.id },
+        { members: { some: { userId: user.id, hiddenOnProfile: false } } },
+      ],
       visibility: friend ? { in: ["PUBLIC", "FRIENDS"] } : "PUBLIC",
     },
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],

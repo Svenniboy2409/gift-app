@@ -173,6 +173,35 @@ export async function removeListInvite(userId: string, inviteId: string) {
   });
 }
 
+/**
+ * Staat deze gedeelde lijst op het profiel van deze deelnemer?
+ *
+ * `null` als hij geen deelnemer is — de eigenaar regelt dit met de
+ * zichtbaarheid van de lijst zelf, en heeft de knop dus niet nodig.
+ */
+export async function isHiddenOnProfile(userId: string, listId: string) {
+  const member = await prisma.listMember.findUnique({
+    where: { listId_userId: { listId, userId } },
+    select: { hiddenOnProfile: true },
+  });
+  return member ? member.hiddenOnProfile : null;
+}
+
+/**
+ * De lijst van je eigen profiel halen, of hem er weer op zetten. Raakt alleen
+ * jouw profiel: bij de andere deelnemers blijft hij staan.
+ */
+export async function setHiddenOnProfile(
+  userId: string,
+  listId: string,
+  hidden: boolean,
+) {
+  await prisma.listMember.updateMany({
+    where: { listId, userId },
+    data: { hiddenOnProfile: hidden },
+  });
+}
+
 /** Zelf weggaan, of door de eigenaar eruit gezet worden. */
 export async function removeMember(
   actorId: string,

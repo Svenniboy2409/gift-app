@@ -9,6 +9,7 @@ import {
   joinListAction,
   removeListInviteAction,
   removeMemberAction,
+  setHiddenOnProfileAction,
 } from "@/lib/actions/collab";
 import type { FormState } from "@/lib/actions/auth";
 import type { Participant } from "@/lib/collab";
@@ -30,6 +31,8 @@ export function ListCollab({
   pending,
   collabCode,
   max,
+  onProfile,
+  hiddenOnProfile,
 }: {
   listId: string;
   isOwner: boolean;
@@ -42,6 +45,10 @@ export function ListCollab({
   pending: { id: string; name: string }[];
   collabCode: string | null;
   max: number;
+  /** Zet de eigenaar de lijst op ieders profiel? Dan valt er iets te kiezen. */
+  onProfile: boolean;
+  /** Staat hij van jouw profiel af? `null` als je niet meedoet. */
+  hiddenOnProfile: boolean | null;
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -217,6 +224,33 @@ export function ListCollab({
             </div>
           )}
         </>
+      )}
+
+      {/* De eigenaar bepaalt of de lijst op ieders profiel staat. Wil je hem
+          niet op die van jou, dan haal je hem er hier vanaf — bij de anderen
+          blijft hij gewoon staan. */}
+      {!isOwner && hiddenOnProfile !== null && onProfile && (
+        <div className="mt-4 rounded-xl bg-sunken p-3">
+          <p className="text-sm font-semibold text-ink">
+            {t("collab.profileTitle")}
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            {t(hiddenOnProfile ? "collab.profileHidden" : "collab.profileShown")}
+          </p>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm mt-3 w-full sm:w-auto"
+            disabled={busy}
+            onClick={() =>
+              run(setHiddenOnProfileAction, {
+                listId,
+                hidden: hiddenOnProfile ? "0" : "1",
+              })
+            }
+          >
+            {t(hiddenOnProfile ? "collab.profileShow" : "collab.profileHide")}
+          </button>
+        </div>
       )}
 
       {!isOwner && (

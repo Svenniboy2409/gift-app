@@ -9,6 +9,7 @@ import {
   joinList,
   removeListInvite,
   removeMember,
+  setHiddenOnProfile,
 } from "@/lib/collab";
 import type { FormState } from "@/lib/actions/auth";
 
@@ -48,6 +49,19 @@ export async function removeListInviteAction(formData: FormData) {
   const user = await requireUser();
   await removeListInvite(user.id, String(formData.get("inviteId") ?? ""));
   refresh();
+}
+
+/**
+ * Een gedeelde lijst van je eigen profiel halen of hem er weer op zetten.
+ * Alleen jouw profiel verandert; bij de anderen blijft de lijst staan.
+ */
+export async function setHiddenOnProfileAction(formData: FormData) {
+  const user = await requireUser();
+  const listId = String(formData.get("listId") ?? "");
+  await setHiddenOnProfile(user.id, listId, formData.get("hidden") === "1");
+
+  refresh(listId);
+  revalidatePath(`/u/${user.handle}`);
 }
 
 export async function removeMemberAction(formData: FormData) {

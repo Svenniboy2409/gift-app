@@ -19,11 +19,22 @@ export default async function AccountPage() {
     getTranslator(),
   ]);
 
-  const publicLists = lists.filter((list) => list.visibility === "PUBLIC");
-  const friendLists = lists.filter((list) => list.visibility === "FRIENDS");
-  // De rest staat voor niemand op je profiel: privé en alleen-met-de-link.
+  // Een gedeelde lijst die je van je eigen profiel hebt gehaald hoort hier bij
+  // de verborgen lijsten, ook al staat hij bij de anderen wel op het profiel.
+  const opProfiel = (list: (typeof lists)[number]) => !list.hiddenOnMyProfile;
+
+  const publicLists = lists.filter(
+    (list) => list.visibility === "PUBLIC" && opProfiel(list),
+  );
+  const friendLists = lists.filter(
+    (list) => list.visibility === "FRIENDS" && opProfiel(list),
+  );
+  // De rest staat voor niemand op je profiel: privé, alleen-met-de-link, en
+  // wat je zelf hebt verborgen.
   const hiddenLists = lists.filter(
-    (list) => list.visibility !== "PUBLIC" && list.visibility !== "FRIENDS",
+    (list) =>
+      (list.visibility !== "PUBLIC" && list.visibility !== "FRIENDS") ||
+      !opProfiel(list),
   );
 
   const toCard = (list: (typeof lists)[number]) => ({

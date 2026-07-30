@@ -80,6 +80,11 @@ model ListMember {
   userId    String
   createdAt DateTime @default(now())
 
+  /// Een gedeelde lijst staat op ieders profiel. Wie hem daar liever niet
+  /// heeft, zet dit aan: dan verdwijnt hij van dit ene profiel, en blijft hij
+  /// bij de anderen gewoon staan.
+  hiddenOnProfile Boolean @default(false)
+
   list List @relation(fields: [listId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

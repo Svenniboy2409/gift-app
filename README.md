@@ -38,7 +38,9 @@ maar de eigenaar van de lijst ziet dat nooit.
 - **Samen aan één lijst.** Nodig vrienden uit om mee te doen — via het tandwiel
   van de lijst of met een link (`/j/<code>`). Iedereen kan dan cadeaus
   toevoegen en aanpassen; de instellingen blijven van de eigenaar en gelden
-  voor alle deelnemers. Met hoogstens tien mensen tegelijk.
+  voor alle deelnemers. Met hoogstens tien mensen tegelijk. Wie de lijst liever
+  niet op zijn eigen profiel heeft, haalt hem daar met één knop vanaf — bij de
+  anderen blijft hij gewoon staan.
 - **Een lijst alleen voor vrienden.** Naast privé, met-de-link en openbaar is er
   nu ook *alleen mijn vrienden*: die lijst opent alleen voor wie je als vriend
   hebt — de deel-link is dan niet genoeg — en staat bij hen ook op je profiel.
@@ -402,6 +404,12 @@ door), maar de instellingen blijven van de eigenaar: die functies filteren op
 `userId` en dat is precies de bedoeling, want wat de eigenaar kiest geldt voor
 iedereen. Staat de lijst op "ook op mijn profiel", dan verschijnt hij dus op het
 profiel van álle deelnemers.
+
+Eén ding blijft daarbij van de deelnemer zelf: `ListMember.hiddenOnProfile`.
+Wie de lijst niet op zijn eigen profiel wil, zet die vlag om via het paneel van
+de lijst; `getPublicProfile` filtert er dan op, en alleen dat ene profiel
+verandert. Op je eigen `/account` schuift de lijst mee naar de weggeklapte
+lijsten, zodat wat je daar ziet klopt met wat een bezoeker krijgt.
 
 Meedoen kan op twee manieren: een uitnodiging aan een vriend, die op het tabblad
 Sociaal binnenkomt, of de link `/j/<code>` voor iemand buiten je vriendenlijst.

@@ -8,6 +8,7 @@ import {
   MAX_MEMBERS,
   getCollabCode,
   getParticipants,
+  isHiddenOnProfile,
   isListOwner,
 } from "@/lib/collab";
 import { getFriends } from "@/lib/friends";
@@ -35,17 +36,19 @@ export default async function ListPage({
 
   // Wie doet er mee, wie kun je nog vragen, en wat is de link om mee te doen?
   const owner = await isListOwner(user.id, list.id);
-  const [participants, friends, invites, collabCode] = await Promise.all([
-    getParticipants(list.id),
-    owner ? getFriends(user.id) : Promise.resolve([]),
-    owner
-      ? prisma.listInvite.findMany({
-          where: { listId: list.id },
-          select: { id: true, to: { select: { id: true, name: true } } },
-        })
-      : Promise.resolve([]),
-    owner ? getCollabCode(user.id, list.id) : Promise.resolve(null),
-  ]);
+  const [participants, friends, invites, collabCode, hiddenOnProfile] =
+    await Promise.all([
+      getParticipants(list.id),
+      owner ? getFriends(user.id) : Promise.resolve([]),
+      owner
+        ? prisma.listInvite.findMany({
+            where: { listId: list.id },
+            select: { id: true, to: { select: { id: true, name: true } } },
+          })
+        : Promise.resolve([]),
+      owner ? getCollabCode(user.id, list.id) : Promise.resolve(null),
+      owner ? Promise.resolve(null) : isHiddenOnProfile(user.id, list.id),
+    ]);
 
   const invited = new Set(invites.map((invite) => invite.to.id));
   const inList = new Set(participants.map((person) => person.id));
@@ -119,6 +122,12 @@ export default async function ListPage({
               }))}
               collabCode={collabCode}
               max={MAX_MEMBERS}
+              // Een vriendenlijst staat ook op profielen, alleen niet voor
+              // iedereen — daar valt dus net zo goed iets te kiezen.
+              onProfile={
+                list.visibility === "PUBLIC" || list.visibility === "FRIENDS"
+              }
+              hiddenOnProfile={hiddenOnProfile}
             />
           </ListSettings>
           <div className="relative">

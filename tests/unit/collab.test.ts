@@ -1,6 +1,14 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
-import { MAX_MEMBERS, canEditList, isListOwner, joinList } from "@/lib/collab";
+import {
+  MAX_MEMBERS,
+  canEditList,
+  isHiddenOnProfile,
+  isListOwner,
+  joinList,
+  setHiddenOnProfile,
+} from "@/lib/collab";
+import { getPublicProfile } from "@/lib/lists";
 
 /**
  * De grens van tien mensen per lijst, tegen de echte database. Met tien man
@@ -72,6 +80,45 @@ describe("samen aan een lijst werken", () => {
 
     expect(await canEditList(vreemde, lijst.id)).toBe(false);
     expect(await isListOwner(eigenaar, lijst.id)).toBe(true);
+  });
+
+  it("laat een deelnemer de lijst van zijn eigen profiel halen", async () => {
+    const eigenaar = await maakGebruiker(300);
+    const helper = await maakGebruiker(301);
+    const lijst = await prisma.list.create({
+      data: {
+        userId: eigenaar,
+        title: "Op het profiel",
+        shareCode: `collab-${stempel}-d`,
+        visibility: "PUBLIC",
+      },
+      select: { id: true },
+    });
+    expect(await joinList(helper, lijst.id)).toBe("joined");
+
+    const titels = async (nummer: number) => {
+      const profiel = await getPublicProfile(`collab-${stempel}-${nummer}`);
+      return profiel!.lists.map((lijst) => lijst.title);
+    };
+
+    // De eigenaar zet hem op ieders profiel, dus ook op dat van de helper.
+    expect(await isHiddenOnProfile(helper, lijst.id)).toBe(false);
+    expect(await titels(301)).toContain("Op het profiel");
+
+    await setHiddenOnProfile(helper, lijst.id, true);
+
+    // Weg bij de helper, en nergens anders iets veranderd.
+    expect(await isHiddenOnProfile(helper, lijst.id)).toBe(true);
+    expect(await titels(301)).not.toContain("Op het profiel");
+    expect(await titels(300)).toContain("Op het profiel");
+
+    // En terugzetten mag natuurlijk ook.
+    await setHiddenOnProfile(helper, lijst.id, false);
+    expect(await titels(301)).toContain("Op het profiel");
+
+    // De eigenaar doet dit met de zichtbaarheid van de lijst zelf; voor hem is
+    // er niets te verbergen.
+    expect(await isHiddenOnProfile(eigenaar, lijst.id)).toBeNull();
   });
 
   it("laat dezelfde persoon niet twee keer meedoen", async () => {
