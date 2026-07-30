@@ -16,6 +16,7 @@ import { prisma } from "@/lib/db";
 import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
+import { ShareCodeSettings } from "@/components/share-code-settings";
 import { SharePanel } from "@/components/share-panel";
 
 export default async function ListPage({
@@ -110,6 +111,9 @@ export default async function ListPage({
               visibility: list.visibility,
             }}
           >
+            {/* Een nieuwe deel-link maken hoort bij de instellingen, boven het
+                blok om samen in te vullen. */}
+            {owner && <ShareCodeSettings listId={list.id} />}
             <ListCollab
               listId={list.id}
               isOwner={owner}
@@ -163,12 +167,7 @@ export default async function ListPage({
         </div>
       </div>
 
-      <SharePanel
-        listId={list.id}
-        shareCode={list.shareCode}
-        handle={user.handle}
-        visibility={list.visibility}
-      />
+      <SharePanel shareCode={list.shareCode} visibility={list.visibility} />
 
       <GiftManager listId={list.id} gifts={list.gifts} />
     </div>

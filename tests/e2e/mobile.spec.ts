@@ -258,3 +258,42 @@ test("uitloggen kan vanuit de instellingen", async ({ page }) => {
   await page.goto("/dashboard");
   await page.waitForURL(/\/login/);
 });
+
+test("delen en kopiëren staan naast elkaar op één regel", async ({ page }) => {
+  await register(page, "Deler", "mob9");
+  await createList(page, "Mijn verjaardag");
+
+  const deelvak = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Deel deze lijst" }) });
+  const delen = deelvak.getByRole("button", { name: "Lijst delen" });
+  const kopieren = deelvak.getByRole("button", { name: "Link kopiëren" });
+
+  const linksVan = (await delen.boundingBox())!;
+  const rechtsVan = (await kopieren.boundingBox())!;
+
+  // Zelfde hoogte, naast elkaar: dus één regel en geen twee.
+  expect(Math.abs(linksVan.y - rechtsVan.y)).toBeLessThan(2);
+  expect(rechtsVan.x).toBeGreaterThan(linksVan.x + linksVan.width - 2);
+
+  // De balk met de link zelf is uit beeld, maar de link is er nog.
+  const veld = deelvak.getByLabel("Deel deze lijst");
+  expect((await veld.boundingBox())!.width).toBeLessThan(5);
+  expect(await veld.inputValue()).toMatch(/\/l\/[A-Za-z0-9]{10}$/);
+
+  // Een nieuwe link maken hoort nu bij de instellingen van de lijst, en het
+  // knopje naar je eigen profiel is weg — daar is het tabblad Account voor.
+  await expect(
+    deelvak.getByRole("button", { name: "Nieuwe link maken" }),
+  ).toHaveCount(0);
+  await expect(deelvak.getByRole("link", { name: "Je profiel" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  const paneel = page.getByRole("dialog");
+  await expect(
+    paneel.getByRole("heading", { name: "De deel-link" }),
+  ).toBeVisible();
+  await expect(
+    paneel.getByRole("button", { name: "Nieuwe link maken" }),
+  ).toBeVisible();
+});

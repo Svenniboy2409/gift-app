@@ -453,7 +453,10 @@ op gebouwd; het bureaublad krijgt vanaf `md` de bredere variant.
   zweefeffecten alleen op schermen met een muis — op een touchscreen blijft zo'n
   effect na het tikken hangen.
 - **Delen via het deelvenster van de telefoon** (`navigator.share`), met
-  kopiëren naar het klembord als terugval.
+  kopiëren naar het klembord als terugval. Overal waar er iets te delen valt
+  staat dezelfde `ShareRow`: twee knoppen naast elkaar, en de link zelf in een
+  veld dat wel in de paginastructuur staat maar niet in beeld — je deelt hem of
+  je kopieert hem, uitschrijven hoeft niet.
 - **Op je beginscherm te zetten**: `app/manifest.ts` en de iconen in `public/`
   laten de app starten zonder adresbalk, met een eigen icoon.
 

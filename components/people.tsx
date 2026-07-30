@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { useOrigin } from "@/lib/hooks";
 import type { FriendProfile, Relation } from "@/lib/friends";
 import { Avatar } from "@/components/avatar";
+import { ShareRow } from "@/components/share-row";
 
 /**
  * Naam, profielnaam en foto — met rechts ruimte voor knoppen. Twee knoppen
@@ -296,52 +297,17 @@ export function PeopleSearch() {
 export function InviteLink({ code }: { code: string }) {
   const { t } = useI18n();
   const origin = useOrigin();
-  const [copied, setCopied] = useState(false);
-  const url = `${origin}/i/${code}`;
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Klembord geweigerd — de link staat er nog gewoon om te selecteren.
-    }
-  }
-
-  async function share() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: t("social.inviteTitle"), url });
-        return;
-      } catch {
-        // Geannuleerd; kopiëren blijft over.
-      }
-    }
-    await copy();
-  }
 
   return (
     <section className="card p-5">
       <h2 className="font-semibold text-ink">{t("social.inviteTitle")}</h2>
       <p className="mt-1 text-sm text-muted">{t("social.inviteBody")}</p>
-
-      <button type="button" className="btn btn-primary mt-3 w-full sm:hidden" onClick={share}>
-        {t("social.inviteShare")}
-      </button>
-
-      <div className="mt-2 flex flex-col gap-2 sm:mt-3 sm:flex-row">
-        <input
-          readOnly
-          value={url}
-          onFocus={(event) => event.target.select()}
-          className="field font-mono text-xs sm:text-sm"
-          aria-label={t("social.inviteTitle")}
-        />
-        <button type="button" className="btn btn-secondary shrink-0" onClick={copy}>
-          {copied ? t("share.copied") : t("share.copy")}
-        </button>
-      </div>
+      <ShareRow
+        url={`${origin}/i/${code}`}
+        title={t("social.inviteTitle")}
+        shareLabel={t("social.inviteShare")}
+        linkLabel={t("social.inviteTitle")}
+      />
     </section>
   );
 }

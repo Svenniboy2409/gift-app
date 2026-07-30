@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 import {
@@ -17,6 +17,7 @@ import type { FriendProfile } from "@/lib/friends";
 import { useI18n } from "@/lib/i18n/client";
 import { useOrigin } from "@/lib/hooks";
 import { Avatar } from "@/components/avatar";
+import { ShareRow } from "@/components/share-row";
 
 /**
  * Samen aan een lijst werken: wie doet er mee, wie kun je nog vragen, en de
@@ -54,7 +55,6 @@ export function ListCollab({
   const router = useRouter();
   const origin = useOrigin();
   const [busy, start] = useTransition();
-  const [copied, setCopied] = useState(false);
 
   const full = participants.length + pending.length >= max;
   const url = collabCode ? `${origin}/j/${collabCode}` : "";
@@ -66,28 +66,6 @@ export function ListCollab({
       await action(data);
       router.refresh();
     });
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Klembord geweigerd; de link staat er nog om te selecteren.
-    }
-  }
-
-  async function share() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: t("collab.title"), url });
-        return;
-      } catch {
-        // Geannuleerd; kopiëren blijft over.
-      }
-    }
-    await copy();
   }
 
   return (
@@ -198,29 +176,13 @@ export function ListCollab({
           {collabCode && !full && (
             <div className="mt-4">
               <span className="label">{t("collab.link")}</span>
-              <button
-                type="button"
-                className="btn btn-secondary w-full sm:hidden"
-                onClick={share}
-              >
-                {t("collab.linkShare")}
-              </button>
-              <div className="mt-2 flex flex-col gap-2 sm:mt-0 sm:flex-row">
-                <input
-                  readOnly
-                  value={url}
-                  onFocus={(event) => event.target.select()}
-                  className="field font-mono text-xs"
-                  aria-label={t("collab.link")}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary shrink-0"
-                  onClick={copy}
-                >
-                  {copied ? t("share.copied") : t("share.copy")}
-                </button>
-              </div>
+              <ShareRow
+                url={url}
+                title={t("collab.title")}
+                shareLabel={t("collab.linkShare")}
+                linkLabel={t("collab.link")}
+                className=""
+              />
             </div>
           )}
         </>
