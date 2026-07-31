@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
+import { useCanShare } from "@/lib/hooks";
 
 /**
  * Delen of kopiëren, naast elkaar op één regel.
  *
+ * Twee knoppen die elk één ding doen: delen opent het deelvenster van het
+ * toestel, kopiëren zet de link op het klembord. Delen kopieert dus niet mee —
+ * anders overschrijft een deling die je halverwege afbreekt stilletjes je
+ * klembord.
+ *
  * De link zelf stond hier eerst in een veld tussen de twee knoppen. Dat nam
- * drie regels in beslag terwijl je er niets mee doet — je deelt hem of je
- * kopieert hem. Het veld staat er nog wel, alleen niet meer in beeld: zo kan
- * een schermlezer de link nog voorlezen en blijft hij te selecteren.
+ * drie regels in beslag terwijl je er niets mee doet. Het veld staat er nog
+ * wel, alleen niet meer in beeld: zo kan een schermlezer de link nog voorlezen
+ * en blijft hij te selecteren.
  */
 export function ShareRow({
   url,
@@ -28,6 +34,7 @@ export function ShareRow({
   className?: string;
 }) {
   const { t } = useI18n();
+  const canShare = useCanShare();
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -36,33 +43,33 @@ export function ShareRow({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Klembord geweigerd; delen blijft over.
+      // Klembord geweigerd; de link is nog te selecteren in het veld hieronder.
     }
   }
 
   /**
-   * Het deelvenster van de telefoon zelf: dan staat de link met twee tikken in
-   * WhatsApp of een berichtje. Kent de browser dat niet, dan valt hij terug op
-   * kopiëren naar het klembord.
+   * Het deelvenster van het toestel zelf: dan staat de link met twee tikken in
+   * WhatsApp of een berichtje. Breekt iemand het af, dan is er niets gebeurd —
+   * dat is wat afbreken hoort te doen.
    */
   async function share() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, url });
-        return;
-      } catch {
-        // Geannuleerd of geweigerd; kopiëren blijft over.
-      }
+    try {
+      await navigator.share({ title, url });
+    } catch {
+      // Geannuleerd of geweigerd; verder niets.
     }
-    await copy();
   }
 
   return (
     <div className={`flex gap-2 ${className}`}>
-      <button type="button" className="btn btn-primary flex-1" onClick={share}>
-        <ShareIcon />
-        {shareLabel}
-      </button>
+      {/* Zonder deelvenster geen deelknop: die zou niets kunnen doen. Dan
+          houdt kopiëren de hele regel voor zich. */}
+      {canShare && (
+        <button type="button" className="btn btn-primary flex-1" onClick={share}>
+          <ShareIcon />
+          {shareLabel}
+        </button>
+      )}
       <button type="button" className="btn btn-secondary flex-1" onClick={copy}>
         <CopyIcon />
         {copied ? t("share.copied") : t("share.copy")}

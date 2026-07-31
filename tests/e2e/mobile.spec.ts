@@ -259,8 +259,49 @@ test("uitloggen kan vanuit de instellingen", async ({ page }) => {
   await page.waitForURL(/\/login/);
 });
 
+/**
+ * Chromium op een computer kent het deelvenster van een telefoon niet, dus
+ * doen we alsof — en houden we bij wat er gedeeld en wat er gekopieerd wordt.
+ */
+async function nepDeelvenster(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as {
+      gedeeld: { url?: string }[];
+      gekopieerd: string[];
+      deelMislukt: boolean;
+    };
+    w.gedeeld = [];
+    w.gekopieerd = [];
+    w.deelMislukt = false;
+
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: { url?: string }) => {
+        if (w.deelMislukt) throw new Error("afgebroken");
+        w.gedeeld.push(data);
+      },
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (tekst: string) => {
+          w.gekopieerd.push(tekst);
+        },
+      },
+    });
+  });
+}
+
+const gedeeld = (page: Page) =>
+  page.evaluate(
+    () => (window as unknown as { gedeeld: { url?: string }[] }).gedeeld,
+  );
+const gekopieerd = (page: Page) =>
+  page.evaluate(() => (window as unknown as { gekopieerd: string[] }).gekopieerd);
+
 test("delen en kopiëren staan naast elkaar op één regel", async ({ page }) => {
-  await register(page, "Deler", "mob9");
+  await nepDeelvenster(page);
+  await register(page, "Deler", "mob12");
   await createList(page, "Mijn verjaardag");
 
   const deelvak = page
@@ -295,5 +336,56 @@ test("delen en kopiëren staan naast elkaar op één regel", async ({ page }) =>
   ).toBeVisible();
   await expect(
     paneel.getByRole("button", { name: "Nieuwe link maken" }),
+  ).toBeVisible();
+});
+
+test("delen deelt, kopiëren kopieert — en niet allebei tegelijk", async ({
+  page,
+}) => {
+  await nepDeelvenster(page);
+  await register(page, "Deler Twee", "mob13");
+  await createList(page, "Mijn verjaardag");
+
+  const deelvak = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Deel deze lijst" }) });
+  const link = await deelvak.getByLabel("Deel deze lijst").inputValue();
+
+  // Delen opent het deelvenster en laat het klembord met rust.
+  await deelvak.getByRole("button", { name: "Lijst delen" }).click();
+  expect(await gedeeld(page)).toEqual([
+    { title: "Deel deze lijst", url: link },
+  ]);
+  expect(await gekopieerd(page)).toEqual([]);
+
+  // Breekt iemand het delen af, dan gebeurt er verder niets — vroeger belandde
+  // de link dan alsnog op het klembord.
+  await page.evaluate(() => {
+    (window as unknown as { deelMislukt: boolean }).deelMislukt = true;
+  });
+  await deelvak.getByRole("button", { name: "Lijst delen" }).click();
+  expect(await gekopieerd(page)).toEqual([]);
+
+  // En kopiëren doet alleen dat.
+  await deelvak.getByRole("button", { name: "Link kopiëren" }).click();
+  await expect(deelvak.getByRole("button", { name: "Gekopieerd!" })).toBeVisible();
+  expect(await gekopieerd(page)).toEqual([link]);
+  expect(await gedeeld(page)).toHaveLength(1);
+});
+
+test("zonder deelvenster blijft alleen kopiëren over", async ({ page }) => {
+  // Een computerbrowser zonder Web Share: een deelknop zou daar niets doen.
+  await register(page, "Kopieerder", "mob14");
+  await createList(page, "Mijn verjaardag");
+
+  const deelvak = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Deel deze lijst" }) });
+
+  await expect(
+    deelvak.getByRole("button", { name: "Lijst delen" }),
+  ).toHaveCount(0);
+  await expect(
+    deelvak.getByRole("button", { name: "Link kopiëren" }),
   ).toBeVisible();
 });

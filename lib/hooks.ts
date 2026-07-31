@@ -16,3 +16,16 @@ export function useOrigin() {
     () => "",
   );
 }
+
+/**
+ * Kent deze browser het deelvenster van het toestel? Een telefoon wel, de
+ * meeste browsers op een computer niet. Tijdens server-rendering gaan we uit
+ * van niet, zodat er geen knop verschijnt die daarna niets doet.
+ */
+export function useCanShare() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => typeof navigator.share === "function",
+    () => false,
+  );
+}
