@@ -90,8 +90,10 @@ export function ListForm({
         />
       </div>
 
+      {/* min-w-0: anders rekt een kolom mee met wat erin staat, en valt het
+          datumveld op een telefoon buiten het scherm. */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="occasion">
             {t("list.field.occasion")}
           </label>
@@ -109,7 +111,7 @@ export function ListForm({
           </select>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="eventDate">
             {t("list.field.eventDate")}{" "}
             <span className="font-normal text-subtle">({t("common.optional")})</span>

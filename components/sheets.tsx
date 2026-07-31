@@ -55,35 +55,38 @@ export function SheetsProvider({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [state, setState] = useState<{
+  const [open, setOpen] = useState<{
     kind: "gift" | "list";
-    /** Waar het paneel geopend is. Ga je weg, dan hoort het dicht te gaan. */
-    path: string;
     /** Loopt op bij elk openen, zodat de inhoud schoon opnieuw begint. */
     token: number;
   } | null>(null);
+  const [shownAt, setShownAt] = useState(pathname);
 
-  const open = state && state.path === pathname ? state : null;
+  // Ga je naar een andere pagina, dan hoort het paneel dicht — en dicht te
+  // blijven. Alleen verbergen is niet genoeg: dan staat het er weer zodra je
+  // met de terugknop terugkomt op de pagina waar je het opende.
+  if (pathname !== shownAt) {
+    setShownAt(pathname);
+    if (open) setOpen(null);
+  }
 
   const value = useMemo<Sheets>(
     () => ({
       openGift: () =>
-        setState((previous) => ({
+        setOpen((previous) => ({
           kind: "gift",
-          path: pathname,
           token: (previous?.token ?? 0) + 1,
         })),
       openList: () =>
-        setState((previous) => ({
+        setOpen((previous) => ({
           kind: "list",
-          path: pathname,
           token: (previous?.token ?? 0) + 1,
         })),
     }),
-    [pathname],
+    [],
   );
 
-  const close = useCallback(() => setState(null), []);
+  const close = useCallback(() => setOpen(null), []);
 
   return (
     <SheetContext.Provider value={value}>

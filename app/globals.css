@@ -297,6 +297,11 @@ summary,
   .field {
     display: block;
     width: 100%;
+    /* Sommige velden brengen een eigen minimumbreedte mee — een datumveld op
+       iOS is breder dan de kolom waar het in staat. Zonder deze twee regels
+       duwt zo'n veld zichzelf buiten beeld. */
+    min-width: 0;
+    max-width: 100%;
     border-radius: 0.75rem;
     border: 1px solid var(--border-strong);
     background-color: var(--surface-raised);

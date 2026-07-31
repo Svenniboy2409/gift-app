@@ -426,3 +426,52 @@ test("hoe graag je iets wilt schuif je in sterren", async ({ page }) => {
   await kaart.getByRole("button", { name: "Bewerken" }).click();
   await expect(page.getByRole("slider", { name: "Hoe graag?" })).toHaveValue("4");
 });
+
+test("na de terugknop staat het paneel niet opeens weer open", async ({
+  page,
+}) => {
+  await register(page, "Terugganger", "mob16");
+
+  // Lijst maken via het paneel; daarna sta je in die lijst.
+  await createList(page, "Sinterklaas");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // Terug naar het overzicht is terug naar de pagina waar het paneel openstond.
+  await page.getByRole("link", { name: "Terug naar mijn lijsten" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // En ook via de terugknop van de telefoon blijft het dicht.
+  await page.getByText("Sinterklaas").click();
+  await page.waitForURL(/\/lists\/(?!new)[a-z0-9]+$/);
+  await page.goBack();
+  await page.waitForURL(/\/dashboard$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("het datumveld blijft binnen het paneel", async ({ page }) => {
+  await register(page, "Datum", "mob17");
+
+  await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
+  const paneel = page.getByRole("dialog");
+  await expect(paneel).toBeVisible();
+  await page.waitForTimeout(400);
+
+  const datum = (await paneel.getByLabel(/^Datum/).boundingBox())!;
+  const naam = (await paneel.getByLabel("Naam van de lijst").boundingBox())!;
+
+  // Even breed als de andere velden, en dus ook even ver naar rechts.
+  expect(Math.abs(datum.width - naam.width)).toBeLessThan(2);
+  expect(datum.x + datum.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+
+  // Chromium houdt een datumveld vanzelf smal genoeg; Safari op iOS niet. Wat
+  // dáár misging is dat het veld en zijn kolom mochten meegroeien met de
+  // inhoud. Dat leggen we hier vast, zodat het niet stilletjes terugkomt.
+  const ruimte = await paneel
+    .getByLabel(/^Datum/)
+    .evaluate((veld) => [
+      getComputedStyle(veld).minWidth,
+      getComputedStyle(veld.parentElement!).minWidth,
+    ]);
+  expect(ruimte).toEqual(["0px", "0px"]);
+});
