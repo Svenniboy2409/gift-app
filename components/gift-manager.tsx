@@ -181,10 +181,11 @@ function GiftRow({
           {gift.merchant && <span className="chip">{gift.merchant}</span>}
         </div>
 
-        {/* Op een telefoon passen vijf tekstknoppen niet naast elkaar; alles
-            wat vanzelf spreekt wordt daar een icoon, en pas op een breed
-            scherm komt het bijschrift erbij. */}
-        <div className="mt-3 flex items-center gap-1">
+        {/* Op een telefoon passen zes knoppen niet op één regel: alles wat
+            vanzelf spreekt wordt daar een icoon, en pas op een breed scherm
+            komt het bijschrift erbij. Past het dan nog niet, dan zakt de groep
+            rechts (volgorde en verwijderen) naar een eigen regel eronder. */}
+        <div className="mt-3 flex flex-wrap items-center gap-1">
           <button type="button" className="btn btn-ghost btn-sm" onClick={onEdit}>
             {t("gift.edit")}
           </button>
@@ -219,38 +220,38 @@ function GiftRow({
             <span className="hidden sm:inline">{t("gift.inListsOpen")}</span>
           </button>
 
-          <div className="flex-1" />
-
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm px-2"
-            onClick={() => move(-1)}
-            disabled={index === 0 || pending}
-            aria-label={t("gift.moveUp")}
-            title={t("gift.moveUp")}
-          >
-            <ArrowIcon up />
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm px-2"
-            onClick={() => move(1)}
-            disabled={index === order.length - 1 || pending}
-            aria-label={t("gift.moveDown")}
-            title={t("gift.moveDown")}
-          >
-            <ArrowIcon />
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger btn-sm px-2"
-            onClick={remove}
-            disabled={pending}
-            aria-label={t("gift.delete")}
-            title={t("gift.delete")}
-          >
-            <TrashIcon />
-          </button>
+          <span className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm px-2"
+              onClick={() => move(-1)}
+              disabled={index === 0 || pending}
+              aria-label={t("gift.moveUp")}
+              title={t("gift.moveUp")}
+            >
+              <ArrowIcon up />
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm px-2"
+              onClick={() => move(1)}
+              disabled={index === order.length - 1 || pending}
+              aria-label={t("gift.moveDown")}
+              title={t("gift.moveDown")}
+            >
+              <ArrowIcon />
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-sm px-2"
+              onClick={remove}
+              disabled={pending}
+              aria-label={t("gift.delete")}
+              title={t("gift.delete")}
+            >
+              <TrashIcon />
+            </button>
+          </span>
         </div>
       </div>
     </li>

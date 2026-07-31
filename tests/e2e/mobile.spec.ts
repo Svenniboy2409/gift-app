@@ -475,3 +475,40 @@ test("het datumveld blijft binnen het paneel", async ({ page }) => {
     ]);
   expect(ruimte).toEqual(["0px", "0px"]);
 });
+
+test("de knoppen bij een cadeau passen allemaal op het scherm", async ({
+  page,
+}) => {
+  await register(page, "Knopjes", "mob18");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  const invoer = page.getByRole("dialog");
+  await invoer.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await invoer.getByLabel("Naam", { exact: true }).fill("Espressomachine");
+  // Met een winkellink erbij staat er een knop extra; dat is de krapste stand.
+  await invoer.getByLabel("Link naar de winkel").fill("https://example.com/x");
+  await invoer.getByRole("button", { name: "Cadeau opslaan" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const kaart = page.locator("li").filter({ hasText: "Espressomachine" });
+  const breedte = page.viewportSize()!.width;
+
+  for (const naam of [
+    "Bewerken",
+    "In welke lijsten",
+    "Omhoog",
+    "Omlaag",
+    "Verwijderen",
+  ]) {
+    const vak = (await kaart.getByRole("button", { name: naam }).boundingBox())!;
+    expect(vak, `${naam} ontbreekt`).not.toBeNull();
+    expect(vak.x, `${naam} valt links buiten beeld`).toBeGreaterThanOrEqual(0);
+    expect(
+      vak.x + vak.width,
+      `${naam} valt rechts buiten beeld`,
+    ).toBeLessThanOrEqual(breedte);
+  }
+
+  expect(await scrollsSideways(page)).toBe(false);
+});
