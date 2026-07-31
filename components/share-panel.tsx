@@ -1,13 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/client";
 import { useOrigin } from "@/lib/hooks";
 import { ShareRow } from "@/components/share-row";
 
 export function SharePanel({
+  listId,
   shareCode,
   visibility,
 }: {
+  listId: string;
   shareCode: string;
   visibility: string;
 }) {
@@ -39,16 +42,16 @@ export function SharePanel({
           />
 
           {/* Een nieuwe link maken hoort bij de instellingen van de lijst; hier
-              blijft alleen het kijkje van een bezoeker over. */}
+              blijft alleen het kijkje van een bezoeker over. Dat gaat naar het
+              voorbeeld en niet naar de deel-link zelf: die zou verklappen wat
+              er al voor je gekocht is. */}
           <div className="mt-3">
-            <a
-              href={`/l/${shareCode}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={`/p/${listId}`}
               className="btn btn-ghost btn-sm -ml-3"
             >
               {t("share.open")}
-            </a>
+            </Link>
           </div>
         </>
       )}

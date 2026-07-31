@@ -167,7 +167,11 @@ export default async function ListPage({
         </div>
       </div>
 
-      <SharePanel shareCode={list.shareCode} visibility={list.visibility} />
+      <SharePanel
+        listId={list.id}
+        shareCode={list.shareCode}
+        visibility={list.visibility}
+      />
 
       <GiftManager listId={list.id} gifts={list.gifts} />
     </div>

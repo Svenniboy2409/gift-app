@@ -102,10 +102,13 @@ export function VisitorGiftCard({
   gift,
   shareCode,
   defaultName,
+  preview = false,
 }: {
   gift: VisitorGift;
   shareCode: string;
   defaultName: string;
+  /** Kijkt de eigenaar mee? Dan is dit een plaatje, geen knop die iets doet. */
+  preview?: boolean;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -219,7 +222,18 @@ export function VisitorGiftCard({
             </a>
           )}
 
-          {gift.myClaim ? (
+          {preview ? (
+            /* Wel te zien, niet te gebruiken: zo weet je hoe het eruitziet
+               zonder dat er iets wordt vastgelegd. */
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled
+              title={t("preview.claimDisabled")}
+            >
+              {t("visitor.claim")}
+            </button>
+          ) : gift.myClaim ? (
             <button
               type="button"
               className="btn btn-ghost btn-sm"

@@ -425,8 +425,20 @@ Dit zit in de datalaag, niet alleen in de UI (`lib/gifts.ts`):
 - `getListForVisitor()` geeft de claim-status wél terug — daar is die functie
   voor.
 
-De end-to-end test controleert dit expliciet: na een claim mag de naam van de
-koper nergens in de HTML van de eigenaar voorkomen.
+Daarmee waren de gegevens veilig, maar de deur stond nog op een kier: de
+eigenaar kon zijn eigen deel-link openen en kwam dan als bezoeker binnen, mét
+claims. Twee dingen sluiten die af:
+
+- **`/p/<id>` is het voorbeeld** achter "Bekijken zoals bezoekers". Dat bouwt de
+  bezoekersweergave op uit `getListForOwner()`, dus alles staat op ongeclaimd,
+  hoeveel er in werkelijkheid ook gekocht is. Claimen kan er niet: de knop staat
+  er wel, maar doet niets.
+- **`/l/<code>` stuurt je door** naar `/lists/<id>` zodra je bent ingelogd en aan
+  de lijst mag werken — als eigenaar of als deelnemer.
+
+De end-to-end tests controleren dit expliciet: na een claim mag de naam van de
+koper nergens in de HTML van de eigenaar voorkomen, ook niet in het voorbeeld,
+en zijn eigen deel-link hoort bij zijn lijst uit te komen.
 
 ## Opmaak: gemaakt voor de telefoon
 
