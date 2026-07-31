@@ -8,9 +8,13 @@ import {
   useContext,
   useMemo,
   useState,
+  useTransition,
 } from "react";
 import type { ScrapeResponse } from "@/app/api/scrape/route";
-import { createGiftInListAction } from "@/lib/actions/gifts";
+import {
+  createGiftInListAction,
+  setGiftListsAction,
+} from "@/lib/actions/gifts";
 import { createListAction } from "@/lib/actions/lists";
 import { useI18n } from "@/lib/i18n/client";
 import {
@@ -24,11 +28,16 @@ import { Sheet } from "@/components/sheet";
 
 export type PickableList = { id: string; title: string };
 
+/** Een cadeau dat je in andere lijsten wilt zetten. */
+export type GiftInLists = { id: string; title: string; listIds: string[] };
+
 type Sheets = {
   /** Cadeau toevoegen; de lijst waar je in zit staat vast al aangevinkt. */
   openGift: () => void;
   /** Nieuwe lijst maken. */
   openList: () => void;
+  /** In welke lijsten staat dit cadeau? */
+  openGiftLists: (gift: GiftInLists) => void;
 };
 
 const SheetContext = createContext<Sheets | null>(null);
@@ -56,9 +65,11 @@ export function SheetsProvider({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState<{
-    kind: "gift" | "list";
+    kind: "gift" | "list" | "giftLists";
     /** Loopt op bij elk openen, zodat de inhoud schoon opnieuw begint. */
     token: number;
+    /** Alleen bij "giftLists": om welk cadeau het gaat. */
+    gift?: GiftInLists;
   } | null>(null);
   const [shownAt, setShownAt] = useState(pathname);
 
@@ -82,6 +93,12 @@ export function SheetsProvider({
           kind: "list",
           token: (previous?.token ?? 0) + 1,
         })),
+      openGiftLists: (gift) =>
+        setOpen((previous) => ({
+          kind: "giftLists",
+          token: (previous?.token ?? 0) + 1,
+          gift,
+        })),
     }),
     [],
   );
@@ -104,6 +121,14 @@ export function SheetsProvider({
         key={`list-${open?.token ?? 0}`}
         open={open?.kind === "list"}
         onClose={close}
+      />
+
+      <GiftListsSheet
+        key={`giftlists-${open?.token ?? 0}`}
+        open={open?.kind === "giftLists"}
+        onClose={close}
+        lists={lists}
+        gift={open?.gift ?? null}
       />
     </SheetContext.Provider>
   );
@@ -224,16 +249,19 @@ function ListPicker({
   lists,
   selected,
   onToggle,
+  label = true,
 }: {
   lists: PickableList[];
   selected: string[];
   onToggle: (id: string) => void;
+  /** Uit als er al een kop boven staat. */
+  label?: boolean;
 }) {
   const { t } = useI18n();
 
   return (
     <div>
-      <span className="label">{t("gift.chooseLists")}</span>
+      {label && <span className="label">{t("gift.chooseLists")}</span>}
       <div className="flex flex-wrap gap-2">
         {lists.map((list) => {
           const active = selected.includes(list.id);
@@ -403,6 +431,71 @@ function NewListSheet({
             visibility: "LINK",
           }}
         />
+      </div>
+    </Sheet>
+  );
+}
+
+/** In welke lijsten staat dit cadeau? Aan- en uitvinken zet het erin of eruit. */
+function GiftListsSheet({
+  open,
+  onClose,
+  lists,
+  gift,
+}: {
+  open: boolean;
+  onClose: () => void;
+  lists: PickableList[];
+  gift: GiftInLists | null;
+}) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [selected, setSelected] = useState<string[]>(gift?.listIds ?? []);
+  const [busy, start] = useTransition();
+
+  function toggle(id: string) {
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((entry) => entry !== id)
+        : [...current, id],
+    );
+  }
+
+  function save() {
+    if (!gift || selected.length === 0) return;
+    start(async () => {
+      const data = new FormData();
+      data.set("giftId", gift.id);
+      for (const id of selected) data.append("listId", id);
+      await setGiftListsAction({}, data);
+      onClose();
+      router.refresh();
+    });
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title={t("gift.inLists")}>
+      <div className="space-y-4 pb-2">
+        <p className="text-sm text-muted">{t("gift.inListsBody")}</p>
+        {gift && (
+          <p className="font-semibold text-ink">{gift.title}</p>
+        )}
+
+        <ListPicker
+          lists={lists}
+          selected={selected}
+          onToggle={toggle}
+          label={false}
+        />
+
+        <button
+          type="button"
+          className="btn btn-primary w-full sm:w-auto"
+          onClick={save}
+          disabled={busy || selected.length === 0}
+        >
+          {busy ? t("common.loading") : t("common.save")}
+        </button>
       </div>
     </Sheet>
   );

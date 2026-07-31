@@ -159,6 +159,10 @@ model Gift {
   priority    Int      @default(3) // 1 t/m 5 sterren; 5 = het liefst
   quantity    Int      @default(1)
   position    Int      @default(0)
+  /// Hetzelfde cadeau kan in meerdere lijsten staan; elke lijst krijgt een
+  /// eigen rij, en die rijen delen deze code. Zo weet de app in welke lijsten
+  /// een cadeau staat, ook al is het per lijst apart te bewerken.
+  groupId     String   @default(cuid())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -166,6 +170,7 @@ model Gift {
   claims Claim[]
 
   @@index([listId])
+  @@index([groupId])
 }
 
 /// Een reservering door een bezoeker. Wordt NOOIT aan de eigenaar van de lijst

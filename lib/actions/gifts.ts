@@ -1,8 +1,15 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createGift, deleteGift, reorderGifts, updateGift } from "@/lib/gifts";
+import {
+  createGift,
+  deleteGift,
+  reorderGifts,
+  setGiftLists,
+  updateGift,
+} from "@/lib/gifts";
 import { giftSchema, parsePriceInput } from "@/lib/validation";
 import type { FormState } from "@/lib/actions/auth";
 
@@ -82,9 +89,12 @@ export async function createGiftInListAction(
   }
 
   const input = toGiftInput(parsed.data);
+  // Eén code voor alle exemplaren: zo weet de app later dat dit hetzelfde
+  // cadeau is, en kun je het in één keer aan een lijst toevoegen of eruit halen.
+  const groupId = randomUUID();
   for (const listId of listIds) {
     // createGift controleert zelf of de lijst van deze gebruiker is.
-    const gift = await createGift(user.id, listId, input);
+    const gift = await createGift(user.id, listId, input, groupId);
     if (!gift) return { error: "generic" };
     revalidatePath(`/lists/${listId}`);
   }
@@ -130,4 +140,29 @@ export async function moveGiftAction(formData: FormData) {
   if (!listId || order.length === 0) return;
   await reorderGifts(user.id, listId, order);
   revalidatePath(`/lists/${listId}`);
+}
+
+/**
+ * In welke lijsten hoort dit cadeau te staan? Wat erbij komt krijgt een eigen
+ * exemplaar, wat afvalt verdwijnt daar weer.
+ */
+export async function setGiftListsAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const giftId = String(formData.get("giftId") ?? "");
+  const listIds = formData
+    .getAll("listId")
+    .map((value) => String(value))
+    .filter(Boolean);
+  if (!giftId) return { error: "required" };
+
+  const result = await setGiftLists(user.id, giftId, listIds);
+  if (result === "none") return { error: "choose-list" };
+  if (result === "unknown") return { error: "generic" };
+
+  for (const listId of listIds) revalidatePath(`/lists/${listId}`);
+  revalidatePath("/dashboard");
+  return { success: "saved" };
 }

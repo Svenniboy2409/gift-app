@@ -128,7 +128,7 @@ test("alleen de eigenaar kan de instellingen aanpassen", async ({ browser }) => 
   // dan staat hij ook op het profiel van de helper.
   await twee.page.keyboard.press("Escape");
   await een.page.reload();
-  await setVisibility(een.page, "Ook op mijn profiel");
+  await setVisibility(een.page, "Openbaar");
 
   await twee.page.goto(`/u/${twee.handle}`);
   await expect(twee.page.getByText("Gedeelde lijst")).toBeVisible();
@@ -153,7 +153,7 @@ test("een deelnemer haalt de lijst van zijn eigen profiel", async ({
 
   // De eigenaar zet hem op ieders profiel.
   await een.page.reload();
-  await setVisibility(een.page, "Ook op mijn profiel");
+  await setVisibility(een.page, "Openbaar");
 
   await twee.page.goto(`/u/${twee.handle}`);
   await expect(twee.page.getByText("Op ons profiel")).toBeVisible();

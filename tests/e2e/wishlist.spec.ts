@@ -170,12 +170,12 @@ test("een privélijst is niet te openen via de deel-link", async ({ browser }) =
 
   await page.getByRole("button", { name: "Nieuwe lijst" }).first().click();
   await page.getByLabel("Naam van de lijst").fill("Geheime lijst");
-  await page.getByText("Alleen ik", { exact: true }).click();
+  await page.getByText("Privé", { exact: true }).click();
   await page.getByRole("button", { name: "Lijst maken" }).click();
   await expect(page).toHaveURL(/\/lists\/[a-z0-9]+$/);
 
   await expect(
-    page.getByText("Deze lijst staat op 'Alleen ik' en is niet te delen."),
+    page.getByText("Deze lijst staat op 'Privé' en is niet te delen."),
   ).toBeVisible();
 
   await context.close();

@@ -23,7 +23,7 @@ test("je account toont je profiel, met de verborgen lijsten weggeklapt", async (
 
   // Eén lijst op het profiel, één die er juist niet op hoort.
   await createList(page, "Mijn verjaardag");
-  await setVisibility(page, "Ook op mijn profiel");
+  await setVisibility(page, "Openbaar");
 
   await page.goto("/dashboard");
   await createList(page, "Geheime lijst");
@@ -45,7 +45,7 @@ test("je account toont je profiel, met de verborgen lijsten weggeklapt", async (
 test("foto en bio komen op je openbare profiel te staan", async ({ page }) => {
   await register(page, "Bio Persoon", "bio");
   await createList(page, "Kerst");
-  await setVisibility(page, "Ook op mijn profiel");
+  await setVisibility(page, "Openbaar");
 
   await page.goto("/settings");
   await page.getByLabel("Over jou").fill("Houdt van koken en te veel koffie.");

@@ -62,6 +62,7 @@ const ownerGiftSelect = {
   priority: true,
   quantity: true,
   position: true,
+  groupId: true,
 } as const;
 
 /** Lijst inclusief cadeaus voor de eigenaar — zonder ook maar één claim-veld. */
@@ -217,6 +218,8 @@ export async function createGift(
   userId: string,
   listId: string,
   input: GiftInput,
+  /** Hoort dit cadeau bij exemplaren in andere lijsten? Dan delen ze deze code. */
+  groupId?: string,
 ) {
   const list = await prisma.list.findFirst({
     where: { id: listId, ...editableBy(userId) },
@@ -244,6 +247,7 @@ export async function createGift(
       priority: clampPriority(input.priority),
       quantity: clampQuantity(input.quantity),
       position: (last?.position ?? -1) + 1,
+      ...(groupId ? { groupId } : {}),
     },
     select: ownerGiftSelect,
   });
@@ -306,4 +310,75 @@ export async function reorderGifts(
     ),
   );
   return true;
+}
+
+/**
+ * In welke lijsten staat elk van deze cadeaus?
+ *
+ * Een cadeau in twee lijsten is twee rijen die dezelfde `groupId` delen. We
+ * kijken alleen naar lijsten waar deze gebruiker aan mag werken: staat hetzelfde
+ * cadeau ook in de lijst van iemand anders, dan gaat hem dat niet aan.
+ */
+export async function getGiftListIds(userId: string, groupIds: string[]) {
+  if (groupIds.length === 0) return {};
+
+  const rows = await prisma.gift.findMany({
+    where: { groupId: { in: groupIds }, list: editableBy(userId) },
+    select: { groupId: true, listId: true },
+  });
+
+  const map: Record<string, string[]> = {};
+  for (const row of rows) {
+    (map[row.groupId] ??= []).push(row.listId);
+  }
+  return map;
+}
+
+/**
+ * Zet een cadeau in precies deze lijsten. Lijsten die erbij komen krijgen een
+ * eigen exemplaar met dezelfde gegevens; lijsten die afvallen raken het hunne
+ * kwijt. Minstens één lijst blijft over — helemaal nergens meer in staan is
+ * verwijderen, en dat gaat via de prullenbak.
+ */
+export async function setGiftLists(
+  userId: string,
+  giftId: string,
+  listIds: string[],
+): Promise<"saved" | "none" | "unknown"> {
+  if (listIds.length === 0) return "none";
+
+  const gift = await prisma.gift.findFirst({
+    where: { id: giftId, list: editableBy(userId) },
+    select: { ...ownerGiftSelect, groupId: true },
+  });
+  if (!gift) return "unknown";
+
+  // Alleen lijsten waar je zelf aan mag werken; de rest negeren we stil.
+  const allowed = await prisma.list.findMany({
+    where: { id: { in: listIds }, ...editableBy(userId) },
+    select: { id: true },
+  });
+  if (allowed.length === 0) return "none";
+
+  const wanted = new Set(allowed.map((list) => list.id));
+  const current = await prisma.gift.findMany({
+    where: { groupId: gift.groupId, list: editableBy(userId) },
+    select: { id: true, listId: true },
+  });
+
+  const weg = current.filter((row) => !wanted.has(row.listId));
+  // Alles weghalen zou het cadeau laten verdwijnen; dat is niet de bedoeling.
+  if (weg.length === current.length) return "none";
+
+  for (const row of weg) {
+    await prisma.gift.delete({ where: { id: row.id } });
+  }
+
+  const bestaand = new Set(current.map((row) => row.listId));
+  for (const listId of wanted) {
+    if (bestaand.has(listId)) continue;
+    await createGift(userId, listId, gift, gift.groupId);
+  }
+
+  return "saved";
 }

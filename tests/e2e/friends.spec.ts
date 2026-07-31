@@ -86,7 +86,7 @@ test("een vriendenlijst is alleen voor vrienden te openen", async ({
 
   await eva.page.goto("/dashboard");
   await createList(eva.page, "Alleen voor vrienden");
-  await setVisibility(eva.page, "Alleen mijn vrienden");
+  await setVisibility(eva.page, "Vrienden");
   const deelLink = await eva.page.locator("input[readonly]").inputValue();
   const pad = new URL(deelLink).pathname;
 

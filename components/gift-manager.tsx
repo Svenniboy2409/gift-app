@@ -11,6 +11,7 @@ import {
 import { formatPrice } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/client";
 import { AddGiftButton } from "@/components/add-buttons";
+import { useSheets } from "@/components/sheets";
 import {
   GiftEditor,
   centsToInput,
@@ -19,6 +20,8 @@ import {
 
 export type OwnerGift = {
   id: string;
+  /** Exemplaren van hetzelfde cadeau in andere lijsten delen deze code. */
+  groupId: string;
   title: string;
   description: string | null;
   note: string | null;
@@ -42,6 +45,18 @@ function ShopIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"
+      />
+    </svg>
+  );
+}
+
+function ListsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="size-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 6h12M8 12h12M8 18h6M3.5 6h.01M3.5 12h.01M3.5 18h.01M17 16v6M14 19h6"
       />
     </svg>
   );
@@ -78,6 +93,7 @@ function GiftRow({
   index,
   order,
   listId,
+  listIds,
   onEdit,
 }: {
   gift: OwnerGift;
@@ -85,9 +101,12 @@ function GiftRow({
   /** Alle cadeau-id's in de huidige volgorde, om te kunnen verplaatsen. */
   order: string[];
   listId: string;
+  /** In welke lijsten dit cadeau al staat. */
+  listIds: string[];
   onEdit: () => void;
 }) {
   const { t, locale } = useI18n();
+  const { openGiftLists } = useSheets();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const price = formatPrice(gift.priceCents, gift.currency, locale);
@@ -183,6 +202,23 @@ function GiftRow({
             </a>
           )}
 
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() =>
+              openGiftLists({
+                id: gift.id,
+                title: gift.title,
+                listIds: listIds.length > 0 ? listIds : [listId],
+              })
+            }
+            aria-label={t("gift.inListsOpen")}
+            title={t("gift.inListsOpen")}
+          >
+            <ListsIcon />
+            <span className="hidden sm:inline">{t("gift.inListsOpen")}</span>
+          </button>
+
           <div className="flex-1" />
 
           <button
@@ -224,9 +260,12 @@ function GiftRow({
 export function GiftManager({
   listId,
   gifts,
+  listIdsByGroup,
 }: {
   listId: string;
   gifts: OwnerGift[];
+  /** Per groupId: in welke lijsten dat cadeau staat. */
+  listIdsByGroup: Record<string, string[]>;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -273,6 +312,7 @@ export function GiftManager({
                 index={index}
                 order={gifts.map((item) => item.id)}
                 listId={listId}
+                listIds={listIdsByGroup[gift.groupId] ?? [listId]}
                 onEdit={() =>
                   setEditing({
                     mode: "edit",

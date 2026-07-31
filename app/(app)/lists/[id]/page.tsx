@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getListForOwner } from "@/lib/gifts";
+import { getGiftListIds, getListForOwner } from "@/lib/gifts";
 import { getTranslator } from "@/lib/i18n/server";
 import { daysUntil, formatDate } from "@/lib/i18n";
 import {
@@ -50,6 +50,13 @@ export default async function ListPage({
       owner ? getCollabCode(user.id, list.id) : Promise.resolve(null),
       owner ? Promise.resolve(null) : isHiddenOnProfile(user.id, list.id),
     ]);
+
+  // In welke lijsten staat elk cadeau nog meer? Alleen lijsten waar deze
+  // gebruiker zelf aan mag werken tellen mee.
+  const listIdsByGroup = await getGiftListIds(
+    user.id,
+    list.gifts.map((gift) => gift.groupId),
+  );
 
   const invited = new Set(invites.map((invite) => invite.to.id));
   const inList = new Set(participants.map((person) => person.id));
@@ -173,7 +180,11 @@ export default async function ListPage({
         visibility={list.visibility}
       />
 
-      <GiftManager listId={list.id} gifts={list.gifts} />
+      <GiftManager
+        listId={list.id}
+        gifts={list.gifts}
+        listIdsByGroup={listIdsByGroup}
+      />
     </div>
   );
 }

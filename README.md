@@ -388,10 +388,10 @@ De vier standen van een lijst:
 
 | Stand | Wie kan hem openen |
 | --- | --- |
-| Alleen ik | niemand anders; de deel-link doet niets |
-| Alleen mijn vrienden | je vrienden, ingelogd; staat ook op je profiel voor hen |
-| Iedereen met de link | iedereen die de link heeft, zonder account |
-| Ook op mijn profiel | idem, plus zichtbaar op `/u/<handle>` |
+| Privé | niemand anders; de deel-link doet niets |
+| Vrienden | je vrienden, ingelogd; staat ook op je profiel voor hen |
+| Met link | iedereen die de link heeft, zonder account |
+| Openbaar | idem, plus zichtbaar op `/u/<handle>` |
 
 De controle zit in de datalaag (`getListForVisitor`, `getPublicProfile`), niet in
 de UI: een vriendenlijst opvragen zonder vriend te zijn levert gewoon niets op.
@@ -415,6 +415,20 @@ Meedoen kan op twee manieren: een uitnodiging aan een vriend, die op het tabblad
 Sociaal binnenkomt, of de link `/j/<code>` voor iemand buiten je vriendenlijst.
 Meer dan tien mensen per lijst gaat niet; dat wordt bewaakt bij het uitnodigen
 én bij het meedoen zelf, met een unit-test tegen de echte database erop.
+
+## Eén cadeau in meerdere lijsten
+
+Een cadeau dat in twee lijsten staat is twee rijen in de database, elk in zijn
+eigen lijst, met dezelfde `Gift.groupId`. Dat is bewust: per lijst mag je de
+prijs, het aantal of de notitie anders zetten zonder dat de andere lijst
+verandert. De `groupId` is er alleen om te weten dat het om hetzelfde cadeau
+gaat.
+
+Vanuit een lijst opent de knop *In welke lijsten* een paneel met alle lijsten
+waar je aan mag werken; de lijsten waar het cadeau al in staat zijn aangevinkt.
+Wat je aanvinkt krijgt een eigen exemplaar, wat je uitvinkt raakt het zijne
+kwijt (`setGiftLists` in `lib/gifts.ts`). Alles uitvinken kan niet: nergens meer
+in staan is verwijderen, en dat hoort bij de prullenbak te blijven.
 
 ## Hoe de verrassing bewaakt wordt
 
