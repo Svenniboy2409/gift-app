@@ -154,9 +154,9 @@ function GiftRow({
           {price && (
             <span className="chip bg-accent-soft text-accent">{price}</span>
           )}
+          {/* Alleen de sterren die je gaf; de rest zou als lege plekken lezen. */}
           <span className="chip" title={t("gift.field.priority")}>
             {"★".repeat(gift.priority)}
-            <span className="text-subtle">{"★".repeat(5 - gift.priority)}</span>
           </span>
           {gift.quantity > 1 && <span className="chip">{gift.quantity}×</span>}
           {gift.merchant && <span className="chip">{gift.merchant}</span>}

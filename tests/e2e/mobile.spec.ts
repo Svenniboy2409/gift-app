@@ -419,10 +419,8 @@ test("hoe graag je iets wilt schuif je in sterren", async ({ page }) => {
 
   const kaart = page.locator("li").filter({ hasText: "Espressomachine" });
   await expect(kaart).toBeVisible();
-  const chip = kaart.getByTitle("Hoe graag?");
-  await expect(chip).toHaveText("★★★★★");
-  // Vier ingekleurd, dus precies één doffe ster erachter.
-  await expect(chip.locator("span")).toHaveText("★");
+  // Vier sterren gegeven, dus vier sterren te zien — niet vijf met een doffe.
+  await expect(kaart.getByTitle("Hoe graag?")).toHaveText("★★★★");
 
   // Bij het bewerken staat de schuif weer op vier.
   await kaart.getByRole("button", { name: "Bewerken" }).click();
