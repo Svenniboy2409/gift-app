@@ -155,9 +155,9 @@ export function VisitorGiftCard({
             {t("gift.noImage")}
           </span>
         )}
-        {gift.priority === 3 && (
+        {gift.priority === 5 && (
           <span className="absolute left-3 top-3 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-[var(--accent-text)]">
-            {t("priority.3")}
+            {t("priority.top")}
           </span>
         )}
       </div>

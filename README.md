@@ -25,8 +25,8 @@ maar de eigenaar van de lijst ziet dat nooit.
 - **Lijsten per gelegenheid** met datum, aftellen, omslagkleur en
   zichtbaarheid (privé / alleen vrienden / iedereen met de link / ook op je
   profiel).
-- **Cadeau-details:** prioriteit (leuk / graag / heel graag), gewenst aantal en
-  een notitie voor maat, kleur of variant.
+- **Cadeau-details:** hoe graag je iets wilt op een schuif van vijf sterren,
+  gewenst aantal en een notitie voor maat, kleur of variant.
 - **Claimen zonder account.** Een bezoeker vult alleen een naam in. Bij meerdere
   exemplaren telt de app af ("nog 1 van 2 beschikbaar"). Je eigen claim kun je
   altijd weer intrekken.

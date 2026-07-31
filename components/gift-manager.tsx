@@ -156,6 +156,7 @@ function GiftRow({
           )}
           <span className="chip" title={t("gift.field.priority")}>
             {"★".repeat(gift.priority)}
+            <span className="text-subtle">{"★".repeat(5 - gift.priority)}</span>
           </span>
           {gift.quantity > 1 && <span className="chip">{gift.quantity}×</span>}
           {gift.merchant && <span className="chip">{gift.merchant}</span>}

@@ -16,7 +16,7 @@ function readGiftForm(formData: FormData) {
     url: formData.get("url") ?? "",
     merchant: formData.get("merchant") ?? "",
     imageUrl: formData.get("imageUrl") ?? "",
-    priority: formData.get("priority") ?? 2,
+    priority: formData.get("priority") ?? 3,
     quantity: formData.get("quantity") ?? 1,
   });
 }

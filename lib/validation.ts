@@ -62,7 +62,7 @@ export const giftSchema = z.object({
   url: z.string().trim().url("invalid-url").optional().or(z.literal("")),
   merchant: z.string().trim().max(80).optional().or(z.literal("")),
   imageUrl: z.string().trim().max(2000).optional().or(z.literal("")),
-  priority: z.coerce.number().int().min(1).max(3).default(2),
+  priority: z.coerce.number().int().min(1).max(5).default(3),
   quantity: z.coerce.number().int().min(1).max(99).default(1),
 });
 

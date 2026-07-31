@@ -8,6 +8,7 @@ import { compressImage } from "@/lib/image-compress";
 import { useI18n } from "@/lib/i18n/client";
 import { uploadErrorKey } from "@/lib/upload-errors";
 import { ImageCropper } from "@/components/image-cropper";
+import { StarSlider } from "@/components/star-slider";
 import type { MessageKey } from "@/lib/i18n";
 
 export type GiftDraft = {
@@ -33,7 +34,7 @@ export const EMPTY_DRAFT: GiftDraft = {
   url: "",
   merchant: "",
   imageUrl: "",
-  priority: 2,
+  priority: 3,
   quantity: 1,
 };
 
@@ -368,27 +369,7 @@ export function GiftEditor({
 
           <div>
             <span className="label">{t("gift.field.priority")}</span>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3].map((level) => (
-                <label
-                  key={level}
-                  className="cursor-pointer"
-                  title={t(`priority.${level}` as MessageKey)}
-                >
-                  <input
-                    type="radio"
-                    name="priority"
-                    value={level}
-                    defaultChecked={draft.priority === level}
-                    className="peer sr-only"
-                  />
-                  <span className="chip border border-line px-3 py-1.5 peer-checked:border-accent peer-checked:bg-accent-soft peer-checked:text-accent">
-                    {"★".repeat(level)}{" "}
-                    {t(`priority.${level}` as MessageKey)}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <StarSlider defaultValue={draft.priority} />
           </div>
 
           <div>

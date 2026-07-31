@@ -389,3 +389,42 @@ test("zonder deelvenster blijft alleen kopiëren over", async ({ page }) => {
     deelvak.getByRole("button", { name: "Link kopiëren" }),
   ).toBeVisible();
 });
+
+test("hoe graag je iets wilt schuif je in sterren", async ({ page }) => {
+  await register(page, "Sterren", "mob15");
+  await createList(page, "Verjaardag");
+
+  await openGiftSheet(page);
+  const paneel = page.getByRole("dialog");
+  await paneel.getByRole("button", { name: "Of vul het zelf in" }).click();
+  await paneel.getByLabel("Naam", { exact: true }).fill("Espressomachine");
+
+  // Vijf sterren, waarvan er standaard drie ingekleurd zijn.
+  const schuif = paneel.getByRole("slider", { name: "Hoe graag?" });
+  const sterren = paneel.locator("svg.text-accent");
+  await expect(schuif).toHaveValue("3");
+  await expect(sterren).toHaveCount(3);
+
+  // Verder schuiven kleurt er meer in, terugschuiven minder.
+  await schuif.fill("5");
+  await expect(sterren).toHaveCount(5);
+  await schuif.fill("2");
+  await expect(sterren).toHaveCount(2);
+  await expect(schuif).toHaveAttribute("aria-valuetext", "2 van de 5 sterren");
+
+  // En de stand komt mee met het formulier.
+  await schuif.fill("4");
+  await paneel.getByRole("button", { name: "Cadeau opslaan" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const kaart = page.locator("li").filter({ hasText: "Espressomachine" });
+  await expect(kaart).toBeVisible();
+  const chip = kaart.getByTitle("Hoe graag?");
+  await expect(chip).toHaveText("★★★★★");
+  // Vier ingekleurd, dus precies één doffe ster erachter.
+  await expect(chip.locator("span")).toHaveText("★");
+
+  // Bij het bewerken staat de schuif weer op vier.
+  await kaart.getByRole("button", { name: "Bewerken" }).click();
+  await expect(page.getByRole("slider", { name: "Hoe graag?" })).toHaveValue("4");
+});

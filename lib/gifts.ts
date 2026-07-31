@@ -38,9 +38,10 @@ export type GiftInput = {
   quantity?: number;
 };
 
+/** Hoe graag je iets wilt: 1 tot 5 sterren, met 3 als middenweg. */
 function clampPriority(value: number | undefined) {
-  if (!value || Number.isNaN(value)) return 2;
-  return Math.min(3, Math.max(1, Math.round(value)));
+  if (!value || Number.isNaN(value)) return 3;
+  return Math.min(5, Math.max(1, Math.round(value)));
 }
 
 function clampQuantity(value: number | undefined) {
