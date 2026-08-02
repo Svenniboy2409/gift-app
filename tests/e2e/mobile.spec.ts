@@ -511,4 +511,20 @@ test("de knoppen bij een cadeau passen allemaal op het scherm", async ({
   }
 
   expect(await scrollsSideways(page)).toBe(false);
+
+  // De vier knoppen rechts horen samen op één regel te staan.
+  const hoogtes: number[] = [];
+  for (const naam of ["In welke lijsten", "Omhoog", "Omlaag", "Verwijderen"]) {
+    const vak = (await kaart.getByRole("button", { name: naam }).boundingBox())!;
+    hoogtes.push(vak.y);
+  }
+  expect(Math.max(...hoogtes) - Math.min(...hoogtes)).toBeLessThan(2);
+
+  // En Bewerken staat links, onder de foto — niet meer in die rij.
+  const bewerken = (await kaart
+    .getByRole("button", { name: "Bewerken" })
+    .boundingBox())!;
+  const foto = (await kaart.locator("img, span").first().boundingBox())!;
+  expect(bewerken.x).toBeLessThan(breedte / 3);
+  expect(bewerken.y).toBeGreaterThan(foto.y);
 });

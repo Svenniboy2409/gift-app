@@ -145,21 +145,32 @@ function GiftRow({
         pending ? "opacity-50" : ""
       }`}
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border border-line bg-sunken sm:size-24">
-        {gift.imageUrl ? (
-          <Image
-            src={gift.imageUrl}
-            alt=""
-            fill
-            sizes="96px"
-            className="object-contain p-1.5"
-            unoptimized
-          />
-        ) : (
-          <span className="flex size-full items-center justify-center px-1 text-center text-[11px] text-subtle">
-            {t("gift.noImage")}
-          </span>
-        )}
+      {/* Bewerken staat onder de foto: dan houden de andere knoppen samen één
+          regel, ook op een telefoon. */}
+      <div className="flex w-20 shrink-0 flex-col gap-2 sm:w-24">
+        <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-line bg-sunken">
+          {gift.imageUrl ? (
+            <Image
+              src={gift.imageUrl}
+              alt=""
+              fill
+              sizes="96px"
+              className="object-contain p-1.5"
+              unoptimized
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center px-1 text-center text-[11px] text-subtle">
+              {t("gift.noImage")}
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm w-full px-2"
+          onClick={onEdit}
+        >
+          {t("gift.edit")}
+        </button>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -186,9 +197,6 @@ function GiftRow({
             komt het bijschrift erbij. Past het dan nog niet, dan zakt de groep
             rechts (volgorde en verwijderen) naar een eigen regel eronder. */}
         <div className="mt-3 flex flex-wrap items-center gap-1">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onEdit}>
-            {t("gift.edit")}
-          </button>
           {gift.url && (
             <a
               href={gift.url}
