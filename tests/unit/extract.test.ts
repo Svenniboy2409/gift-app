@@ -135,4 +135,83 @@ describe("extractProduct", () => {
     expect(result.priceCents).toBeNull();
     expect(result.imageUrl).toBeNull();
   });
+
+  it("negeert producten uit een aanbevelingenlijst", () => {
+    const html = `
+      <html><head>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"ItemList","itemListElement":[
+          {"@type":"ListItem","item":{"@type":"Product","name":"Senseo koffiepadmachine",
+            "offers":{"@type":"Offer","price":"59.00","priceCurrency":"EUR"}}}]}
+        </script>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"Product","name":"De'Longhi Magnifica S",
+         "offers":{"@type":"Offer","price":"349.00","priceCurrency":"EUR"}}
+        </script>
+      </head><body></body></html>`;
+
+    const result = extractProduct(html, "https://www.voorbeeldshop.nl/p/koffie");
+    expect(result.title).toBe("De'Longhi Magnifica S");
+    expect(result.priceCents).toBe(34900);
+  });
+
+  it("negeert het product uit een review", () => {
+    const html = `
+      <html><head>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"Review",
+         "itemReviewed":{"@type":"Product","name":"Raclette-grill",
+           "offers":{"@type":"Offer","price":"89.00","priceCurrency":"EUR"}}}
+        </script>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"Product","name":"Boska Fonduepan",
+         "offers":{"@type":"Offer","price":"64.95","priceCurrency":"EUR"}}
+        </script>
+      </head><body></body></html>`;
+
+    const result = extractProduct(html, "https://www.voorbeeldshop.nl/p/fondue");
+    expect(result.title).toBe("Boska Fonduepan");
+    expect(result.priceCents).toBe(6495);
+  });
+
+  it("neemt de nieuwprijs, niet die van een tweedehands aanbieder", () => {
+    const html = `
+      <html><head>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"Product","name":"LEGO Classic",
+         "offers":[
+          {"@type":"Offer","price":"12.50","priceCurrency":"EUR","itemCondition":"https://schema.org/UsedCondition"},
+          {"@type":"Offer","price":"29.99","priceCurrency":"EUR","itemCondition":"https://schema.org/NewCondition"}]}
+        </script>
+      </head><body></body></html>`;
+
+    const result = extractProduct(html, "https://www.voorbeeldshop.nl/p/lego");
+    expect(result.priceCents).toBe(2999);
+  });
+
+  it("vindt het product onder mainEntity", () => {
+    const html = `
+      <html><head>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"WebPage",
+         "mainEntity":{"@type":"Product","name":"Gietijzeren theepot",
+           "offers":{"@type":"Offer","price":"39.50","priceCurrency":"EUR"}}}
+        </script>
+      </head><body></body></html>`;
+
+    const result = extractProduct(html, "https://www.voorbeeldshop.nl/p/theepot");
+    expect(result.title).toBe("Gietijzeren theepot");
+    expect(result.priceCents).toBe(3950);
+  });
+
+  it("leest centen die als superscript naast de euro's staan", () => {
+    const html = `
+      <html><head><title>LEGO Classic</title></head><body>
+        <h1>LEGO Classic</h1>
+        <span data-test="price">29<sup class="promo-price__fraction">99</sup></span>
+      </body></html>`;
+
+    const result = extractProduct(html, "https://www.bol.com/nl/nl/p/lego/123/");
+    expect(result.priceCents).toBe(2999);
+  });
 });

@@ -38,12 +38,7 @@ export const EMPTY_DRAFT: GiftDraft = {
   quantity: 1,
 };
 
-/** Centen → bewerkbare tekst ("4995" → "49,95"). */
-export function centsToInput(cents: number | null, locale: string) {
-  if (cents === null) return "";
-  const value = (cents / 100).toFixed(2);
-  return locale === "nl" ? value.replace(".", ",") : value;
-}
+export { centsToInput } from "@/lib/i18n";
 
 function SubmitButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();

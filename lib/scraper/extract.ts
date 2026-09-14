@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { chooseOffer } from "@/lib/scraper/offer";
 import { parseMachinePrice, parsePrice } from "@/lib/scraper/price";
 import { findSiteRule, merchantFromHost } from "@/lib/scraper/sites";
 
@@ -44,6 +45,11 @@ function meta($: Cheerio, ...names: string[]) {
 function jsonLdNodes($: Cheerio): Record<string, unknown>[] {
   const nodes: Record<string, unknown>[] = [];
 
+  // We dalen alleen af langs wegen die naar het product van de pagina zelf
+  // leiden. Juist niet: itemListElement (de aanbevelingen eronder), review en
+  // isRelatedTo — daar staan andere producten in, met andere namen en prijzen.
+  const FOLLOW = ["@graph", "mainEntity", "mainEntityOfPage", "about"];
+
   const push = (value: unknown) => {
     if (!value || typeof value !== "object") return;
     if (Array.isArray(value)) {
@@ -52,7 +58,7 @@ function jsonLdNodes($: Cheerio): Record<string, unknown>[] {
     }
     const node = value as Record<string, unknown>;
     nodes.push(node);
-    if (Array.isArray(node["@graph"])) node["@graph"].forEach(push);
+    for (const key of FOLLOW) push(node[key]);
   };
 
   $('script[type="application/ld+json"]').each((_, element) => {
@@ -94,18 +100,6 @@ function firstString(value: unknown): string | null {
   return null;
 }
 
-function offersOf(node: Record<string, unknown>): Record<string, unknown>[] {
-  const offers = node.offers;
-  if (!offers) return [];
-  if (Array.isArray(offers)) {
-    return offers.filter(
-      (o): o is Record<string, unknown> => !!o && typeof o === "object",
-    );
-  }
-  if (typeof offers === "object") return [offers as Record<string, unknown>];
-  return [];
-}
-
 function fromJsonLd($: Cheerio): Partial<ExtractedProduct> {
   const product = jsonLdNodes($).find((node) =>
     typeOf(node).some((type) =>
@@ -114,29 +108,9 @@ function fromJsonLd($: Cheerio): Partial<ExtractedProduct> {
   );
   if (!product) return {};
 
-  let priceCents: number | null = null;
-  let currency: string | null = null;
-
-  for (const offer of offersOf(product)) {
-    const spec =
-      offer.priceSpecification && typeof offer.priceSpecification === "object"
-        ? (offer.priceSpecification as Record<string, unknown>)
-        : null;
-    const raw =
-      offer.price ??
-      offer.lowPrice ??
-      spec?.price ??
-      (spec?.["minPrice"] as unknown);
-    const parsed = parseMachinePrice(
-      typeof raw === "string" || typeof raw === "number" ? raw : null,
-    );
-    if (parsed !== null) {
-      priceCents = parsed;
-      currency =
-        firstString(offer.priceCurrency ?? spec?.priceCurrency) ?? null;
-      break;
-    }
-  }
+  const offer = chooseOffer(product);
+  const priceCents = offer ? parseMachinePrice(offer.price) : null;
+  const currency = offer?.currency ?? null;
 
   return {
     title: firstString(product.name),
@@ -207,6 +181,40 @@ function textFromSelectors($: Cheerio, selectors: string[] | undefined) {
     const element = $(selector).first();
     if (element.length === 0) continue;
     const value = clean(element.attr("content") ?? element.text());
+    if (value) return value;
+  }
+  return null;
+}
+
+/**
+ * De prijs uit een selector, met de centen die er los naast staan.
+ *
+ * Nederlandse webshops schrijven hun prijs vaak als "29" met de centen in een
+ * superscript ernaast. De tekst van zo'n element is dan "2999", en dat leest
+ * als tweeduizend negenhonderdnegenennegentig euro. We halen dat staartje er
+ * apart uit en zetten er een komma tussen.
+ */
+function priceFromSelectors($: Cheerio, selectors: string[] | undefined) {
+  if (!selectors) return null;
+  for (const selector of selectors) {
+    const element = $(selector).first();
+    if (element.length === 0) continue;
+
+    const attr = clean(element.attr("content"));
+    if (attr) return attr;
+
+    const copy = element.clone();
+    const fraction = copy
+      .find('sup,[class*="fraction"],[class*="cents"],[class*="decimal"]')
+      .first();
+    const cents = clean(fraction.text());
+    if (cents && /^\d{1,2}$/.test(cents)) {
+      fraction.remove();
+      const whole = clean(copy.text());
+      if (whole && /\d/.test(whole)) return `${whole},${cents}`;
+    }
+
+    const value = clean(element.text());
     if (value) return value;
   }
   return null;
@@ -283,8 +291,8 @@ export function extractProduct(html: string, pageUrl: string): ExtractedProduct 
   const siteLayer: Partial<ExtractedProduct> = rule
     ? {
         title: textFromSelectors($, rule.title),
-        priceCents: parsePrice(textFromSelectors($, rule.price))?.cents ?? null,
-        currency: parsePrice(textFromSelectors($, rule.price))?.currency ?? null,
+        priceCents: parsePrice(priceFromSelectors($, rule.price))?.cents ?? null,
+        currency: parsePrice(priceFromSelectors($, rule.price))?.currency ?? null,
         imageUrl: imageFromSelectors($, rule.image),
       }
     : {};

@@ -39,7 +39,7 @@ test("de bewaarknop leest een productpagina uit en vult het formulier", async ({
 
   // Een nagemaakte webshop op een ander domein dan de app.
   await page.route("https://webshop.test/product", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_PAGE }),
+    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: SHOP_PAGE }),
   );
   await page.goto("https://webshop.test/product");
 
@@ -63,7 +63,7 @@ test("de bewaarknop leest een productpagina uit en vult het formulier", async ({
   // Wat de knop heeft doorgegeven.
   const params = new URL(target).searchParams;
   expect(params.get("title")).toBe("Lattafa Khamrah Eau de Parfum 100ml");
-  expect(params.get("price")).toBe("34.95");
+  expect(params.get("cents")).toBe("3495");
   expect(params.get("currency")).toBe("EUR");
   expect(params.get("image")).toBe("https://media.example.com/khamrah.jpg");
   expect(params.get("url")).toBe("https://webshop.test/product");
@@ -73,7 +73,9 @@ test("de bewaarknop leest een productpagina uit en vult het formulier", async ({
   await expect(page.getByLabel("Naam", { exact: true })).toHaveValue(
     "Lattafa Khamrah Eau de Parfum 100ml",
   );
-  await expect(page.getByLabel("Prijs")).toHaveValue("34.95");
+  // De bewaarknop stuurt hele centen; het formulier toont ze zoals je ze in
+  // het Nederlands schrijft.
+  await expect(page.getByLabel("Prijs")).toHaveValue("34,95");
   await expect(page.getByLabel("In welke lijst?")).toHaveValue(/.+/);
 
   await page.getByRole("button", { name: "Cadeau opslaan" }).click();
@@ -166,7 +168,7 @@ test("pakt de foto van het hoofdproduct, niet van een aanbeveling", async ({
   await page.route("https://webshop.test/aanbevelingen", (route) =>
     route.fulfill({
       status: 200,
-      contentType: "text/html",
+      contentType: "text/html; charset=utf-8",
       body: SHOP_WITH_RECOMMENDATIONS,
     }),
   );
@@ -186,7 +188,7 @@ test("pakt de foto van het hoofdproduct, niet van een aanbeveling", async ({
   const params = new URL(target).searchParams;
   // Naam en prijs horen bij het hoofdproduct...
   expect(params.get("title")).toBe("Lattafa Khamrah Eau de Parfum 100ml");
-  expect(params.get("price")).toBe("34.95");
+  expect(params.get("cents")).toBe("3495");
   // ...en de foto dus ook, niet die van het aanbevolen parfum.
   expect(params.get("image")).toBe("https://media.example.com/HOOFDPRODUCT.jpg");
   expect(params.get("image")).not.toContain("AANBEVOLEN");
@@ -209,7 +211,7 @@ test("kiest de eerste foto uit de reeks van het product", async ({
   baseURL,
 }) => {
   await page.route("https://webshop.test/galerij", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_GALLERY }),
+    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: SHOP_WITH_GALLERY }),
   );
   await page.goto("https://webshop.test/galerij");
 
@@ -265,7 +267,7 @@ test("kiest de hoofdfoto, niet de poster van een video ertussen", async ({
   baseURL,
 }) => {
   await page.route("https://webshop.test/fc27", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_VIDEO }),
+    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: SHOP_WITH_VIDEO }),
   );
   await page.goto("https://webshop.test/fc27");
 
@@ -282,7 +284,7 @@ test("stuurt de andere foto's mee zodat je zelf kunt kiezen", async ({
   baseURL,
 }) => {
   await page.route("https://webshop.test/fc27b", (route) =>
-    route.fulfill({ status: 200, contentType: "text/html", body: SHOP_WITH_VIDEO }),
+    route.fulfill({ status: 200, contentType: "text/html; charset=utf-8", body: SHOP_WITH_VIDEO }),
   );
   await page.goto("https://webshop.test/fc27b");
 

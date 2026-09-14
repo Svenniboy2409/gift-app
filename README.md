@@ -351,9 +351,48 @@ Voor de winkel is dat een gewone bezoeker.
 
 Onder **Instellingen** staat een bladwijzer die je één keer installeert
 (`lib/bookmarklet.ts`). Sta je later op een product, dan tik je erop; de
-bladwijzer leest naam, prijs en foto uit de pagina — dezelfde volgorde als op de
-server: JSON-LD, dan OpenGraph, dan de zichtbare tekst — en opent `/add` met
-alles ingevuld. Daar kies je alleen nog de lijst.
+bladwijzer leest naam, prijs en foto uit de pagina en opent `/add` met alles
+ingevuld. Daar kies je alleen nog de lijst.
+
+Hij leest in dezelfde volgorde als de server, en met dezelfde winkelregels — die
+worden uit `SITE_RULES` in de bladwijzer meegebakken, zodat er één plek is waar
+ze staan:
+
+```
+1. de prijs-selector van deze winkel, als die voorgaat (bol.com, Coolblue)
+2. de productgegevens op de pagina (JSON-LD)
+3. de selectors van deze winkel
+4. OpenGraph
+5. wat er zichtbaar op de pagina staat  → pas als er niets gestructureerds is
+```
+
+Structuur gaat dus altijd voor gokwerk. Vier dingen gingen daar eerder mis, en
+daar is hij nu op gebouwd:
+
+- **Het verkeerde product.** Een productpagina bevat meestal meerdere producten
+  in zijn gegevens: het product zelf, de aanbevelingen eronder, en soms een
+  besproken product uit een review. Wie blind het eerste pakt, krijgt een
+  willekeurig ander product mét zijn prijs. We dalen daarom alleen af langs
+  velden die naar het product van déze pagina wijzen (`@graph`, `mainEntity`),
+  en juist niet langs `itemListElement`, `review` of `isRelatedTo`.
+- **De verkeerde aanbieding.** Eén product heeft vaak meerdere aanbiedingen: de
+  winkel zelf, andere verkopers, tweedehands. `lib/scraper/offer.ts` kiest
+  bewust — nieuw gaat voor gebruikt, op voorraad voor uitverkocht — en kijkt ook
+  in de `priceSpecification`, waar sommige winkels hun prijs verstoppen.
+- **Centen als superscript.** "29" met de centen klein ernaast levert als tekst
+  "2999" op, en dat leest als tweeduizend euro. Het staartje wordt er apart
+  uitgehaald.
+- **De winkelnaam in de titel.** "… | bol.com" en "… : Amazon.nl: Games" worden
+  ingekort tot het productdeel.
+
+De prijs gaat als hele centen naar `/add` en wordt daar pas omgezet naar de
+schrijfwijze van je taal. Over "1.299" kun je twisten, over 129900 niet.
+
+Let op bij het aanpassen van de bladwijzer: de regeleindes gaan er onderaan uit,
+want een bladwijzer is één regel. Gebruik dus geen `//`-commentaar en sluit elke
+opdracht af met een puntkomma; `tests/unit/bookmarklet.test.ts` bewaakt dat. En
+wie de knop al had staan moet hem vervangen na een wijziging — een oude kopie
+blijft lezen zoals hij geleerd was.
 
 Waarom dit via een bladwijzer moet en niet gewoon vanuit de app: een webpagina
 mag de inhoud van een andere website niet lezen (CORS). Een bladwijzer draait

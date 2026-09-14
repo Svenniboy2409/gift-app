@@ -275,6 +275,7 @@
   "bookmarklet.intro": "Some shops, like bol.com, don't let our server in. This button reads a product from your own device while you're on the product page. To the shop you're just a regular visitor, so this works everywhere.",
   "bookmarklet.button": "Save to Wishlist",
   "bookmarklet.copy": "Copy code",
+  "bookmarklet.update": "Already have the button? Replace it with this one. It gets smarter now and then, and an old copy keeps reading the way it was taught.",
   "bookmarklet.desktop": "On a computer",
   "bookmarklet.desktopSteps": "Drag the orange button to your bookmarks bar. That's it. Next time you're on a product page, click that bookmark.",
   "bookmarklet.iphone": "On iPhone or iPad",

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { isConfigured } from "@/lib/config";
 import { getListsForOwner } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
+import { centsToInput } from "@/lib/i18n";
 import { looksLikeJunkImage } from "@/lib/scraper/junk";
 import { merchantFromHost } from "@/lib/scraper/sites";
 import { AddFromBookmarklet } from "@/components/add-from-bookmarklet";
@@ -16,6 +17,7 @@ type Params = Promise<{
   title?: string;
   image?: string;
   price?: string;
+  cents?: string;
   currency?: string;
   description?: string;
   images?: string;
@@ -60,12 +62,24 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(target)}`);
 
-  const [lists, { t }] = await Promise.all([
+  const [lists, { t, locale }] = await Promise.all([
     getListsForOwner(user.id),
     getTranslator(),
   ]);
 
   const image = safeUrl(params.image);
+
+  /**
+   * De bewaarknop stuurt de prijs in hele centen mee. Dat is eenduidig: over
+   * "1.299" kun je twisten, over 129900 niet. We zetten hem hier pas om naar de
+   * schrijfwijze van de taal waarin je de app gebruikt. Oudere bewaarknoppen
+   * sturen nog een ruwe tekst; die laten we staan zoals hij binnenkomt.
+   */
+  const cents = Number.parseInt(params.cents ?? "", 10);
+  const price =
+    Number.isFinite(cents) && cents >= 0
+      ? centsToInput(cents, locale)
+      : (params.price ?? "").slice(0, 20);
 
   // De bewaarknop stuurt een handvol kandidaten mee, gescheiden door spaties.
   const choices = (params.images ?? "")
@@ -95,7 +109,7 @@ export default async function AddPage({ searchParams }: { searchParams: Params }
             draft={{
               title: (params.title ?? "").slice(0, 160),
               description: (params.description ?? "").slice(0, 600),
-              price: (params.price ?? "").slice(0, 20),
+              price,
               currency: (params.currency ?? "EUR").slice(0, 3).toUpperCase(),
               url: safeUrl(params.url),
               merchant: merchantFor(safeUrl(params.url)),

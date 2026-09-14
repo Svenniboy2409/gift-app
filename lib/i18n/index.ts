@@ -48,6 +48,17 @@ export function formatPrice(
   }).format(cents / 100);
 }
 
+/**
+ * Centen → bewerkbare tekst ("4995" → "49,95"). Wat hier uit komt moet door
+ * parsePrice weer terug te lezen zijn, dus het volgt de schrijfwijze van de
+ * taal waarin de gebruiker de app gebruikt.
+ */
+export function centsToInput(cents: number | null, locale: Locale) {
+  if (cents === null) return "";
+  const value = (cents / 100).toFixed(2);
+  return locale === "nl" ? value.replace(".", ",") : value;
+}
+
 export function formatDate(date: Date | string, locale: Locale) {
   const value = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat(locale === "nl" ? "nl-NL" : "en-GB", {

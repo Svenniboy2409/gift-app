@@ -70,6 +70,10 @@ export function BookmarkletCard() {
         </button>
       </div>
 
+      <p className="mt-3 text-sm leading-relaxed text-muted">
+        {t("bookmarklet.update")}
+      </p>
+
       <div className="mt-5 space-y-4 text-sm leading-relaxed text-muted">
         <div>
           <p className="font-semibold text-ink">{t("bookmarklet.desktop")}</p>
