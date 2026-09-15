@@ -339,18 +339,19 @@ function AddGiftSheet({
   function handleResult(result: ScrapeResponse) {
     const product = result.product;
     const blocked = result.reason === "blocked";
+    const shop = product.merchant ?? t("scrape.thisShop");
     const notice =
       result.quality === "failed"
         ? t(blocked ? "scrape.blocked" : "scrape.failed")
         : result.reason === "archived"
           ? t("scrape.archived")
-          : blocked
-            ? t("scrape.blockedPartial", {
-                shop: product.merchant ?? t("scrape.thisShop"),
-              })
-            : result.quality === "partial"
-              ? t("scrape.partial")
-              : null;
+          : result.reason === "other-store"
+            ? t("scrape.otherStore", { shop })
+            : blocked
+              ? t("scrape.blockedPartial", { shop })
+              : result.quality === "partial"
+                ? t("scrape.partial")
+                : null;
 
     setEditing({
       notice,

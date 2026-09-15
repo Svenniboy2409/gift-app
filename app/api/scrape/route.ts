@@ -3,14 +3,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import type { ExtractedProduct } from "@/lib/scraper/extract";
 import { hintsFromUrl } from "@/lib/scraper/from-url";
+import { fetchProductPage } from "@/lib/scraper/fetch-product";
 import { looksLikeJunkImage } from "@/lib/scraper/junk";
-import {
-  extractFromHtml,
-  gatherProductData,
-  isComplete,
-  mergeProduct,
-} from "@/lib/scraper/readers";
-import { FetchBlockedError, fetchHtml, fetchImage } from "@/lib/scraper/safe-fetch";
+import { gatherProductData, isComplete, mergeProduct } from "@/lib/scraper/readers";
+import { fetchImage } from "@/lib/scraper/safe-fetch";
 import { storeImage } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -118,29 +114,16 @@ export async function POST(request: Request) {
   // kunnen we uit de ASIN ook de foto opbouwen.
   const hints = hintsFromUrl(url);
 
-  let product: Partial<ExtractedProduct> = {};
-  let finalUrl = url;
-  let reason: string | undefined;
-
-  // Stap 1: zelf proberen. Werkt bij de meeste webshops.
-  try {
-    const page = await fetchHtml(url);
-    finalUrl = page.finalUrl;
-    if (page.html) {
-      product = extractFromHtml(page.html, page.finalUrl);
-    } else if (page.status === 403 || page.status === 429) {
-      reason = "blocked";
-    } else {
-      reason = "fetch-failed";
-    }
-  } catch (error) {
-    const failure =
-      error instanceof FetchBlockedError ? error.message : "fetch-failed";
-    if (failure === "private-address" || failure === "invalid-protocol") {
-      return NextResponse.json({ error: failure }, { status: 400 });
-    }
-    reason = failure;
+  // Stap 1: de pagina zelf, met één omweg als de winkel ons bij de voordeur
+  // weert (zie lib/scraper/fetch-product.ts).
+  const attempt = await fetchProductPage(url);
+  if (attempt.fatal) {
+    return NextResponse.json({ error: attempt.fatal }, { status: 400 });
   }
+
+  let product: Partial<ExtractedProduct> = attempt.product;
+  const finalUrl = attempt.finalUrl;
+  let reason = attempt.reason;
 
   // Stap 2: ontbreekt er nog iets, dan vullen de gratis leesdiensten de gaten
   // aan — veld voor veld. Dat gebeurt ook als de pagina wél binnenkwam: soms
@@ -153,7 +136,7 @@ export async function POST(request: Request) {
     if (gathered.sources.includes("wayback")) {
       // Uit het archief? Dan kan de prijs achterhaald zijn.
       reason = "archived";
-    } else if (gathered.sources.length > 0) {
+    } else if (gathered.sources.length > 0 && reason !== "other-store") {
       reason = undefined;
     }
   }

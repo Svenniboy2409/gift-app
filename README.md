@@ -315,11 +315,24 @@ De hele keten:
 
 ```
 1. zelf ophalen                          → werkt bij de meeste webshops
+1b. dezelfde winkel, andere voordeur     → alleen bol.com; zie hieronder
 2. titel rommel? → telt als niets gevonden
 3. jina / allorigins / codetabs / microlink, tegelijk, gaten vullen
 4. het archief, voor wat dan nog leeg is
 5. de link zelf, voor de laatste gaten   → naam uit het pad, foto via de ASIN
 ```
+
+**Stap 1b: dezelfde winkel, andere voordeur** (`lib/scraper/mirrors.ts`). Bol.com
+weert sinds voorjaar 2026 vrijwel al het geautomatiseerde verkeer bij zijn
+Nederlandse winkel — ook vanaf gewone thuisverbindingen, dus ook betaalde
+scraping-diensten lopen daar vast. Hun Belgische winkel draait op dezelfde
+catalogus, met dezelfde product-id's, en is wel te lezen. Die proberen we pas
+als de Nederlandse pagina dichtzit of niets opleverde, en alleen als we
+daarvandaan hetzelfde product terugkrijgen — anders zou de voorpagina waarheen
+een onbekend adres wordt doorgestuurd als product in je lijst belanden.
+
+De link van de gebruiker blijft zijn eigen link; alleen de gegevens komen van de
+andere winkel. Dat zegt de app erbij, want prijzen kunnen per land verschillen.
 
 Ook hun eigen foutpagina's worden als rommel herkend — r.jina.ai antwoordt
 bijvoorbeeld met de titel "IP address 34.96.49.86 is blocked" als een winkel
@@ -399,10 +412,25 @@ mag de inhoud van een andere website niet lezen (CORS). Een bladwijzer draait
 ín de pagina zelf en heeft die beperking niet. De gegevens gaan als
 querystring mee naar `/add`, dus er is geen CORS en geen aparte inlog nodig.
 
-Blijft ook dat te vaak misgaan, dan is een betaalde scraping-dienst
-(ScrapingBee, Scrapfly, Zyte) de enige route die structureel werkt: die draaien
-vanaf woonhuis-IP's. Dat is een bewuste keuze met een prijskaartje, dus die zit
-niet ingebouwd.
+### Wat er níét werkt, en wat wel
+
+Voor de volledigheid, want dit komt steeds terug:
+
+- **Betaalde scraping-diensten** (ScrapingBee, Scrapfly, Zyte) werkten vroeger
+  omdat ze vanaf woonhuis-IP's draaien. Voor bol.com/nl geldt dat sinds april
+  2026 niet meer: die blokkeert productpagina's ook via zulke verbindingen.
+- **Een andere User-Agent** (doen alsof je de linkvoorbeeld-bot van WhatsApp of
+  Facebook bent) helpt niet bij de grote winkels. Die controleren of het verzoek
+  écht van Meta's servers komt, niet alleen wat er in de header staat.
+- **De officiële weg** bestaat wel: bol.com heeft een Catalog API voor
+  affiliate-partners, met naam, omschrijving, foto's en prijs. Die vraagt een
+  (gratis) affiliate-account, client credentials, en houdt een grens van 1200
+  verzoeken per uur aan. Dat is de enige route die structureel blijft werken.
+  Zit er niet in; het vraagt een account op naam van wie de app draait.
+- **De bewaarknop** blijft het antwoord dat vandaag werkt en niets kost: die
+  leest de pagina uit in de browser van de gebruiker zelf, en daar is de
+  gebruiker gewoon een bezoeker. Als een winkel ons weert, wijst de app daar nu
+  ook naar.
 
 Kleinere en middelgrote webshops doen meestal niet aan dit soort blokkades. Daar
 werkt stap 1 gewoon volledig.
