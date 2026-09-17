@@ -133,6 +133,19 @@ export async function getListsForOwner(userId: string) {
 }
 
 /**
+ * Alleen de namen, voor het keuzelijstje in de schuifpanelen. Die staan in de
+ * layout, dus dit draait bij élke pagina — de volledige lijsten met hun
+ * omschrijving en aantallen zijn daar zonde van de tijd.
+ */
+export async function getListTitles(userId: string) {
+  return prisma.list.findMany({
+    where: { OR: [{ userId }, { members: { some: { userId } } }] },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+    select: { id: true, title: true },
+  });
+}
+
+/**
  * De lijsten die op een profiel horen (`/u/<handle>`).
  *
  * Dat zijn niet alleen de lijsten van die persoon zelf, maar ook de lijsten

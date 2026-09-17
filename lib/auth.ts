@@ -1,3 +1,4 @@
+import { cache } from "react";
 import "server-only";
 
 import { cookies } from "next/headers";
@@ -74,24 +75,33 @@ export type SessionUser = {
   bio: string | null;
 };
 
-/** De ingelogde gebruiker, of null. */
-export async function getCurrentUser(): Promise<SessionUser | null> {
-  const id = await currentUserId();
-  if (!id) return null;
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      handle: true,
-      locale: true,
-      avatarUrl: true,
-      bio: true,
-    },
-  });
-  return user;
-}
+/**
+ * De ingelogde gebruiker, of null.
+ *
+ * Binnen één verzoek vragen de layout, de pagina en de serveracties hier
+ * allemaal naar. `cache` zorgt dat de database daarvoor één keer wordt
+ * bevraagd in plaats van drie of vier keer — op een database die ergens anders
+ * draait scheelt dat per keer zomaar een paar tientallen milliseconden.
+ */
+export const getCurrentUser = cache(
+  async (): Promise<SessionUser | null> => {
+    const id = await currentUserId();
+    if (!id) return null;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        handle: true,
+        locale: true,
+        avatarUrl: true,
+        bio: true,
+      },
+    });
+    return user;
+  },
+);
 
 /** Zelfde als getCurrentUser, maar gooit als er niemand is ingelogd. */
 export async function requireUser(): Promise<SessionUser> {

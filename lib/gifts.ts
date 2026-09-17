@@ -79,6 +79,9 @@ export async function getListForOwner(userId: string, listId: string) {
       coverColor: true,
       visibility: true,
       shareCode: true,
+      /** Scheelt twee losse vragen aan de database op de lijstpagina. */
+      userId: true,
+      collabCode: true,
       gifts: {
         orderBy: [{ position: "asc" }, { createdAt: "asc" }],
         select: ownerGiftSelect,
@@ -301,14 +304,18 @@ export async function reorderGifts(
   });
   if (!list) return false;
 
-  await prisma.$transaction(
-    ids.map((id, index) =>
-      prisma.gift.updateMany({
-        where: { id, listId },
-        data: { position: index },
-      }),
-    ),
-  );
+  // Eén opdracht voor de hele lijst. Per cadeau een losse UPDATE betekende
+  // tien ritjes naar de database voor één keer verschuiven, en op een database
+  // die ergens anders draait is dat het verschil tussen meteen en seconden.
+  const posities = ids.map((_, index) => index);
+  await prisma.$executeRaw`
+    UPDATE "Gift" AS g
+       SET "position" = nieuw."pos"
+      FROM (
+        SELECT * FROM UNNEST(${ids}::text[], ${posities}::int[]) AS t("id", "pos")
+      ) AS nieuw
+     WHERE g."id" = nieuw."id" AND g."listId" = ${listId}
+  `;
   return true;
 }
 

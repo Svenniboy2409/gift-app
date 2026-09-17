@@ -7,12 +7,11 @@ import { daysUntil, formatDate } from "@/lib/i18n";
 import {
   MAX_MEMBERS,
   getCollabCode,
+  getListInvites,
   getParticipants,
   isHiddenOnProfile,
-  isListOwner,
 } from "@/lib/collab";
 import { getFriends } from "@/lib/friends";
-import { prisma } from "@/lib/db";
 import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
@@ -36,29 +35,26 @@ export default async function ListPage({
   if (!list) notFound();
 
   // Wie doet er mee, wie kun je nog vragen, en wat is de link om mee te doen?
-  const owner = await isListOwner(user.id, list.id);
-  const [participants, friends, invites, collabCode, hiddenOnProfile] =
+  // De lijst weet zelf al van wie hij is, dus dat hoeven we niet apart te vragen.
+  const owner = list.userId === user.id;
+  const [participants, friends, invites, hiddenOnProfile, listIdsByGroup] =
     await Promise.all([
       getParticipants(list.id),
       owner ? getFriends(user.id) : Promise.resolve([]),
-      owner
-        ? prisma.listInvite.findMany({
-            where: { listId: list.id },
-            select: { id: true, to: { select: { id: true, name: true } } },
-          })
-        : Promise.resolve([]),
-      owner ? getCollabCode(user.id, list.id) : Promise.resolve(null),
+      owner ? getListInvites(list.id) : Promise.resolve([]),
       owner ? Promise.resolve(null) : isHiddenOnProfile(user.id, list.id),
+      // In welke lijsten staat elk cadeau nog meer? Alleen lijsten waar deze
+      // gebruiker zelf aan mag werken tellen mee.
+      getGiftListIds(user.id, list.gifts.map((gift) => gift.groupId)),
     ]);
 
-  // In welke lijsten staat elk cadeau nog meer? Alleen lijsten waar deze
-  // gebruiker zelf aan mag werken tellen mee.
-  const listIdsByGroup = await getGiftListIds(
-    user.id,
-    list.gifts.map((gift) => gift.groupId),
-  );
+  // De meedoen-code staat al in de lijst; alleen de allereerste keer moet hij
+  // nog gemaakt worden.
+  const collabCode = owner
+    ? (list.collabCode ?? (await getCollabCode(user.id, list.id)))
+    : null;
 
-  const invited = new Set(invites.map((invite) => invite.to.id));
+  const invited = new Set(invites.map((invite) => invite.userId));
   const inList = new Set(participants.map((person) => person.id));
   const invitable = friends.filter(
     (friend) => !inList.has(friend.id) && !invited.has(friend.id),
@@ -129,7 +125,7 @@ export default async function ListPage({
               invitable={invitable}
               pending={invites.map((invite) => ({
                 id: invite.id,
-                name: invite.to.name,
+                name: invite.name,
               }))}
               collabCode={collabCode}
               max={MAX_MEMBERS}

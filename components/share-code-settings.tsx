@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { regenerateShareCodeAction } from "@/lib/actions/lists";
 import { useI18n } from "@/lib/i18n/client";
 
@@ -12,7 +11,6 @@ import { useI18n } from "@/lib/i18n/client";
  */
 export function ShareCodeSettings({ listId }: { listId: string }) {
   const { t } = useI18n();
-  const router = useRouter();
   const [pending, start] = useTransition();
 
   function regenerate() {
@@ -21,7 +19,6 @@ export function ShareCodeSettings({ listId }: { listId: string }) {
       const data = new FormData();
       data.set("listId", listId);
       await regenerateShareCodeAction(data);
-      router.refresh();
     });
   }
 

@@ -102,9 +102,20 @@ export function GiftEditor({
     }
   }, []);
 
+  /**
+   * Klaar met opslaan? Dan het scherm dicht.
+   *
+   * We kijken naar het antwoord zelf en niet alleen naar `state.success`: elke
+   * keer opslaan levert een nieuw antwoord op, ook als er weer "gelukt" in
+   * staat. Zonder die vergelijking zou een tweede keer opslaan in hetzelfde
+   * scherm niets doen, omdat de waarde dan niet verandert.
+   */
+  const afgehandeld = useRef<FormState | null>(null);
   useEffect(() => {
-    if (state.success) onDone();
-  }, [state.success, onDone]);
+    if (!state.success || afgehandeld.current === state) return;
+    afgehandeld.current = state;
+    onDone();
+  }, [state, onDone]);
 
   /** Eerst leesbaar maken (HEIC!), dan pas het bijsnijden aanbieden. */
   async function choose(file: File) {

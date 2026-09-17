@@ -14,14 +14,6 @@ import { prisma } from "@/lib/db";
 /** Inclusief de eigenaar. Meer dan dit wordt onoverzichtelijk. */
 export const MAX_MEMBERS = 10;
 
-const PROFILE = {
-  id: true,
-  name: true,
-  handle: true,
-  avatarUrl: true,
-  bio: true,
-} as const;
-
 export type Participant = {
   id: string;
   name: string;
@@ -51,24 +43,47 @@ export async function isListOwner(userId: string, listId: string) {
   return Boolean(list);
 }
 
-/** De eigenaar voorop, daarna de deelnemers op volgorde van toetreden. */
+/**
+ * De eigenaar voorop, daarna de deelnemers op volgorde van toetreden.
+ *
+ * Dit is bewust één zoekopdracht. Via de gewone relaties haalde Prisma de
+ * eigenaar en elke deelnemer los op — zeven ritjes naar de database voor een
+ * lijst met twee mensen erin. Op een database die ergens anders draait telt
+ * elk ritje mee in hoe snel de pagina opent.
+ */
 export async function getParticipants(listId: string): Promise<Participant[]> {
-  const list = await prisma.list.findUnique({
-    where: { id: listId },
-    select: {
-      user: { select: PROFILE },
-      members: {
-        orderBy: { createdAt: "asc" },
-        select: { user: { select: PROFILE } },
-      },
-    },
-  });
-  if (!list) return [];
+  const rows = await prisma.$queryRaw<
+    {
+      id: string;
+      name: string;
+      handle: string;
+      avatarUrl: string | null;
+      bio: string | null;
+      isOwner: boolean;
+    }[]
+  >`
+    SELECT u."id", u."name", u."handle", u."avatarUrl", u."bio",
+           TRUE AS "isOwner", NULL::timestamp AS "joinedAt"
+      FROM "List" l
+      JOIN "User" u ON u."id" = l."userId"
+     WHERE l."id" = ${listId}
+    UNION ALL
+    SELECT u."id", u."name", u."handle", u."avatarUrl", u."bio",
+           FALSE AS "isOwner", m."createdAt" AS "joinedAt"
+      FROM "ListMember" m
+      JOIN "User" u ON u."id" = m."userId"
+     WHERE m."listId" = ${listId}
+     ORDER BY "isOwner" DESC, "joinedAt" ASC
+  `;
 
-  return [
-    { ...list.user, isOwner: true },
-    ...list.members.map((member) => ({ ...member.user, isOwner: false })),
-  ];
+  return rows.map(({ id, name, handle, avatarUrl, bio, isOwner }) => ({
+    id,
+    name,
+    handle,
+    avatarUrl,
+    bio,
+    isOwner,
+  }));
 }
 
 async function countParticipants(listId: string) {
@@ -106,6 +121,22 @@ export async function inviteToList(
     update: {},
   });
   return "sent";
+}
+
+/**
+ * De openstaande uitnodigingen voor deze lijst, met de naam van wie je vroeg.
+ *
+ * Ook dit is bewust één zoekopdracht: via de relatie vroeg Prisma de namen
+ * apart op, zelfs als er niemand uitgenodigd was.
+ */
+export async function getListInvites(listId: string) {
+  return prisma.$queryRaw<{ id: string; userId: string; name: string }[]>`
+    SELECT i."id", u."id" AS "userId", u."name"
+      FROM "ListInvite" i
+      JOIN "User" u ON u."id" = i."toId"
+     WHERE i."listId" = ${listId}
+     ORDER BY i."createdAt" ASC
+  `;
 }
 
 export async function getListInvitesFor(userId: string) {

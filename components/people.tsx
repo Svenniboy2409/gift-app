@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Children, useActionState, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import type { FormState } from "@/lib/actions/auth";
 import {
   acceptRequestAction,
@@ -83,7 +82,6 @@ function ActionButton({
   label: string;
   className?: string;
 }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
 
   return (
@@ -95,8 +93,9 @@ function ActionButton({
         start(async () => {
           const data = new FormData();
           for (const [key, value] of Object.entries(fields)) data.set(key, value);
+          // De actie stuurt de vernieuwde pagina meteen mee terug; nog een
+          // keer verversen zou de server het werk dubbel laten doen.
           await action(data);
-          router.refresh();
         })
       }
     >
@@ -204,7 +203,6 @@ export type FoundPerson = FriendProfile & { relation: Relation };
 /** Iemand opzoeken op naam of profielnaam en een uitnodiging sturen. */
 export function PeopleSearch() {
   const { t } = useI18n();
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FoundPerson[] | null>(null);
   const [pending, start] = useTransition();
@@ -233,7 +231,6 @@ export function PeopleSearch() {
             entry.id === person.id ? { ...entry, relation: "sent" } : entry,
           ) ?? null,
       );
-      router.refresh();
     });
   }
 

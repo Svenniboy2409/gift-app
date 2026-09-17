@@ -497,6 +497,55 @@ Wat je aanvinkt krijgt een eigen exemplaar, wat je uitvinkt raakt het zijne
 kwijt (`setGiftLists` in `lib/gifts.ts`). Alles uitvinken kan niet: nergens meer
 in staan is verwijderen, en dat hoort bij de prullenbak te blijven.
 
+## Snelheid: wachten hoort niet bij verschuiven
+
+Elke wijziging gaat naar de database, zodat iedereen die meedoet hetzelfde
+ziet. Dat mag alleen niet betekenen dat je erop moet wachten. Een cadeau drie
+plekken omhoog schuiven kostte zo een halve minuut: je klikte, de knoppen
+gingen op slot, en pas als de server klaar was mocht je weer.
+
+Drie dingen zaten daarachter.
+
+**Het scherm liep achter de server aan.** `components/gift-manager.tsx` houdt
+de volgorde nu zelf bij. Klik je op een pijltje, dan verspringt het cadeau
+meteen en gaat het opsturen op de achtergrond verder. Klik je drie keer snel
+achter elkaar, dan bewaren we alleen de laatste stand: de browser stuurt
+serveracties toch één voor één, dus elke tussenstand apart opsturen heeft geen
+zin. Lukt het opslaan niet, dan springt de lijst terug naar wat de server weet.
+Weggooien werkt hetzelfde: het cadeau is meteen weg uit beeld.
+
+**De pagina werd twee keer opnieuw gemaakt.** Een serveractie die
+`revalidatePath` aanroept stuurt de vernieuwde pagina in hetzelfde antwoord
+mee. Overal stond daarachter nog een `router.refresh()`, en dat liet de server
+precies hetzelfde werk nog een keer doen — je wachtte dus dubbel. Die staan er
+nu niet meer.
+
+**Er werd te vaak naar de database gevraagd.** Een lijst openen kostte 19
+zoekopdrachten, nu acht:
+
+| Wat | Was | Nu |
+| --- | --- | --- |
+| Wie ben ik? | 3× per pagina | 1× (`cache()` in `lib/auth.ts`) |
+| Wie doen er mee? | 7 | 1 (`getParticipants`) |
+| Je vrienden | 3 | 1 (`getFriends`) |
+| Uitnodigingen voor de lijst | 2 | 1 (`getListInvites`) |
+| Volgorde opslaan | 1 per cadeau, in een transactie | 1 (`UNNEST`) |
+| De lijstnamen in de panelen | de volledige lijsten | alleen `id` en `titel` |
+
+Prisma vroeg bij lege relaties nog netjes naar `WHERE id IN (NULL)`: had je
+geen vrienden en geen uitnodigingen, dan kostte dat alsnog drie ritjes naar de
+database. Vandaar de handgeschreven zoekopdrachten voor die drie.
+
+Op een database die naast de app draait scheelt elk ritje maar een paar
+milliseconden. Op Vercel, met de database ergens anders, is het het verschil
+tussen meteen en seconden.
+
+> **Geen `loading.tsx`.** Een laadscherm zou een lijst meteen laten opengaan,
+> maar in Next.js 16.2 blijft een serveractie daarna hangen: het opslaan van
+> een cadeau kwam niet meer terug uit "Bezig…". Dat is een veel erger probleem
+> dan een pagina die even laadt, dus die bestanden staan er niet. De winst komt
+> nu van minder werk in plaats van van eerder iets laten zien.
+
 ## Hoe de verrassing bewaakt wordt
 
 Dit zit in de datalaag, niet alleen in de UI (`lib/gifts.ts`):
@@ -571,6 +620,11 @@ De e2e-tests draaien in twee smaken: `chromium` op bureaubladformaat en
 `mobiel` op de maat van een iPhone. Die laatste bewaakt de navigatiebalk, en
 controleert dat geen enkele pagina zijwaarts wegschuift en dat de laatste knop
 van een formulier niet achter de balk valt.
+
+`tests/e2e/snelheid.spec.ts` bewaakt dat verschuiven en weggooien meteen te
+zien zijn: er wordt drie keer achter elkaar op hetzelfde pijltje geklikt zonder
+tussendoor te wachten, en de nieuwe volgorde moet binnen twee seconden op het
+scherm staan én na een herlaadbeurt nog kloppen.
 
 De bewaarknop wordt echt uitgevoerd in de e2e-test: er wordt een nagemaakte
 webshoppagina geserveerd, de bookmarklet-code draait daarop, en we controleren

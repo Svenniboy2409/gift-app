@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 import {
   acceptListInviteAction,
@@ -52,7 +51,6 @@ export function ListCollab({
   hiddenOnProfile: boolean | null;
 }) {
   const { t } = useI18n();
-  const router = useRouter();
   const origin = useOrigin();
   const [busy, start] = useTransition();
 
@@ -64,7 +62,6 @@ export function ListCollab({
       const data = new FormData();
       for (const [key, value] of Object.entries(fields)) data.set(key, value);
       await action(data);
-      router.refresh();
     });
   }
 
@@ -247,7 +244,6 @@ export function ListInvites({
   }[];
 }) {
   const { t } = useI18n();
-  const router = useRouter();
   const [busy, start] = useTransition();
 
   if (invites.length === 0) return null;
@@ -257,7 +253,6 @@ export function ListInvites({
       const data = new FormData();
       data.set("inviteId", inviteId);
       await action(data);
-      router.refresh();
     });
   }
 

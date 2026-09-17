@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import { deleteListAction, updateListAction } from "@/lib/actions/lists";
 import { useI18n } from "@/lib/i18n/client";
 import { ListForm, type ListFormValues } from "@/components/list-form";
@@ -26,15 +25,11 @@ export function ListSettings({
   children?: React.ReactNode;
 }) {
   const { t } = useI18n();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
 
+  // Ook na opslaan hoeft het paneel alleen dicht: de omslag erachter — titel,
+  // kleur, gelegenheid — komt met het antwoord van de actie zelf mee.
   const close = useCallback(() => setOpen(false), []);
-  const saved = useCallback(() => {
-    setOpen(false);
-    // De omslag erachter verandert mee: titel, kleur, gelegenheid.
-    router.refresh();
-  }, [router]);
 
   return (
     <>
@@ -69,7 +64,7 @@ export function ListSettings({
                 action={updateListAction.bind(null, listId)}
                 initial={initial}
                 submitLabel={t("list.save")}
-                onSaved={saved}
+                onSaved={close}
               />
 
               {children}

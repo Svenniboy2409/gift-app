@@ -41,14 +41,24 @@ export type FriendProfile = {
   bio: string | null;
 };
 
+/**
+ * Je vrienden, in één zoekopdracht.
+ *
+ * Via de gewone relaties werd dit er drie: eerst de vriendschappen, daarna de
+ * mensen aan de ene kant en die aan de andere kant — ook als je nog helemaal
+ * geen vrienden hebt, want dan vroeg Prisma nog netjes naar `IN (NULL)`. Deze
+ * pagina staat achter elke lijst, dus die twee ritjes naar de database tellen
+ * mee in hoe snel alles opent.
+ */
 export async function getFriends(userId: string): Promise<FriendProfile[]> {
-  const rows = await prisma.friendship.findMany({
-    where: { OR: [{ aId: userId }, { bId: userId }] },
-    orderBy: { createdAt: "desc" },
-    select: { a: { select: PROFILE }, b: { select: PROFILE } },
-  });
-
-  return rows.map((row) => (row.a.id === userId ? row.b : row.a));
+  return prisma.$queryRaw<FriendProfile[]>`
+    SELECT u."id", u."name", u."handle", u."avatarUrl", u."bio"
+      FROM "Friendship" f
+      JOIN "User" u
+        ON u."id" = CASE WHEN f."aId" = ${userId} THEN f."bId" ELSE f."aId" END
+     WHERE f."aId" = ${userId} OR f."bId" = ${userId}
+     ORDER BY f."createdAt" DESC
+  `;
 }
 
 export async function getIncomingRequests(userId: string) {

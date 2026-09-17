@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   deleteGiftAction,
   moveGiftAction,
@@ -37,6 +37,24 @@ export type OwnerGift = {
 type Editing =
   | { mode: "closed" }
   | { mode: "edit"; giftId: string; draft: GiftDraft };
+
+/**
+ * Loopt onze eigen volgorde nog voor op die van de server?
+ *
+ * Zolang dat zo is, laten we op het scherm zien wat de gebruiker net heeft
+ * gedaan. Weet de server het inmiddels ook, dan geven we het stuur weer uit
+ * handen. Cadeaus die wij niet kennen (net toegevoegd) of die wij net hebben
+ * weggehaald maken niet uit: we kijken alleen naar de cadeaus die in allebei
+ * voorkomen.
+ */
+function looptVoor(order: string[], serverIds: string[]) {
+  const bekend = new Set(serverIds);
+  if (!order.every((id) => bekend.has(id))) return false;
+
+  const mijn = new Set(order);
+  const serverVolgorde = serverIds.filter((id) => mijn.has(id));
+  return serverVolgorde.some((id, index) => id !== order[index]);
+}
 
 function ShopIcon() {
   return (
@@ -91,60 +109,30 @@ function TrashIcon() {
 function GiftRow({
   gift,
   index,
-  order,
+  count,
   listId,
   listIds,
   onEdit,
+  onMove,
+  onRemove,
 }: {
   gift: OwnerGift;
   index: number;
-  /** Alle cadeau-id's in de huidige volgorde, om te kunnen verplaatsen. */
-  order: string[];
+  /** Hoeveel cadeaus er in beeld staan; bepaalt of de pijltjes nog kunnen. */
+  count: number;
   listId: string;
   /** In welke lijsten dit cadeau al staat. */
   listIds: string[];
   onEdit: () => void;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: () => void;
 }) {
   const { t, locale } = useI18n();
   const { openGiftLists } = useSheets();
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const price = formatPrice(gift.priceCents, gift.currency, locale);
 
-  function run(action: (data: FormData) => Promise<void>, data: FormData) {
-    startTransition(async () => {
-      await action(data);
-      router.refresh();
-    });
-  }
-
-  function move(direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= order.length) return;
-
-    const next = [...order];
-    [next[index], next[target]] = [next[target], next[index]];
-
-    const data = new FormData();
-    data.set("listId", listId);
-    data.set("order", next.join(","));
-    run(moveGiftAction, data);
-  }
-
-  function remove() {
-    if (!window.confirm(t("gift.deleteConfirm"))) return;
-    const data = new FormData();
-    data.set("giftId", gift.id);
-    data.set("listId", listId);
-    run(deleteGiftAction, data);
-  }
-
   return (
-    <li
-      className={`card card-hover flex gap-4 p-4 transition-opacity ${
-        pending ? "opacity-50" : ""
-      }`}
-    >
+    <li className="card card-hover flex gap-4 p-4">
       {/* Bewerken staat onder de foto: dan houden de andere knoppen samen één
           regel, ook op een telefoon. */}
       <div className="flex w-20 shrink-0 flex-col gap-2 sm:w-24">
@@ -230,8 +218,8 @@ function GiftRow({
           <button
             type="button"
             className="btn btn-ghost btn-sm px-2"
-            onClick={() => move(-1)}
-            disabled={index === 0 || pending}
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
             aria-label={t("gift.moveUp")}
             title={t("gift.moveUp")}
           >
@@ -240,8 +228,8 @@ function GiftRow({
           <button
             type="button"
             className="btn btn-ghost btn-sm px-2"
-            onClick={() => move(1)}
-            disabled={index === order.length - 1 || pending}
+            onClick={() => onMove(1)}
+            disabled={index === count - 1}
             aria-label={t("gift.moveDown")}
             title={t("gift.moveDown")}
           >
@@ -250,8 +238,7 @@ function GiftRow({
           <button
             type="button"
             className="btn btn-danger btn-sm px-2"
-            onClick={remove}
-            disabled={pending}
+            onClick={onRemove}
             aria-label={t("gift.delete")}
             title={t("gift.delete")}
           >
@@ -277,11 +264,107 @@ export function GiftManager({
   const router = useRouter();
   const [editing, setEditing] = useState<Editing>({ mode: "closed" });
 
+  /**
+   * Verschuiven en weggooien gebeuren meteen op het scherm; het opslaan loopt
+   * er op de achtergrond achteraan. Je hoeft dus nergens op te wachten en kunt
+   * gerust drie keer achter elkaar op hetzelfde pijltje drukken.
+   */
+  const [order, setOrder] = useState<string[] | null>(null);
+  const [removed, setRemoved] = useState<string[]>([]);
+
+  const serverIds = gifts.map((gift) => gift.id);
+
+  // Weet de server onze volgorde inmiddels? Dan hoeven we hem niet langer zelf
+  // bij te houden.
+  const eigenVolgorde = order && looptVoor(order, serverIds) ? order : null;
+  if (order && !eigenVolgorde) setOrder(null);
+
+  // Cadeaus die de server ook echt kwijt is, hoeven we niet meer te verbergen.
+  if (removed.some((id) => !serverIds.includes(id))) {
+    setRemoved(removed.filter((id) => serverIds.includes(id)));
+  }
+
+  const perId = new Map(gifts.map((gift) => [gift.id, gift]));
+  const ordered = eigenVolgorde
+    ? [
+        ...eigenVolgorde.map((id) => perId.get(id)!),
+        // Cadeaus die er ondertussen bij zijn gekomen sluiten achteraan aan.
+        ...gifts.filter((gift) => !eigenVolgorde.includes(gift.id)),
+      ]
+    : gifts;
+  const shown =
+    removed.length > 0
+      ? ordered.filter((gift) => !removed.includes(gift.id))
+      : ordered;
+
+  /**
+   * De browser stuurt serveracties één voor één. Klik je snel achter elkaar,
+   * dan heeft het geen zin elke tussenstand apart op te sturen: we bewaren
+   * alleen de laatste en sturen die zodra de vorige klaar is.
+   */
+  const bezig = useRef(false);
+  const wachtrij = useRef<string[] | null>(null);
+
+  const bewaarVolgorde = useCallback(
+    async (ids: string[]) => {
+      if (bezig.current) {
+        wachtrij.current = ids;
+        return;
+      }
+      bezig.current = true;
+      try {
+        let volgende: string[] | null = ids;
+        while (volgende) {
+          const data = new FormData();
+          data.set("listId", listId);
+          data.set("order", volgende.join(","));
+          await moveGiftAction(data);
+          volgende = wachtrij.current;
+          wachtrij.current = null;
+        }
+      } catch {
+        // Niet gelukt: terug naar wat de server weet, anders denk je ten
+        // onrechte dat het bewaard is.
+        wachtrij.current = null;
+        setOrder(null);
+        router.refresh();
+      } finally {
+        bezig.current = false;
+      }
+    },
+    [listId, router],
+  );
+
+  function move(giftId: string, direction: -1 | 1) {
+    const ids = shown.map((gift) => gift.id);
+    const from = ids.indexOf(giftId);
+    const to = from + direction;
+    if (from < 0 || to < 0 || to >= ids.length) return;
+
+    const next = [...ids];
+    [next[from], next[to]] = [next[to], next[from]];
+    setOrder(next);
+    void bewaarVolgorde(next);
+  }
+
+  async function remove(giftId: string) {
+    if (!window.confirm(t("gift.deleteConfirm"))) return;
+    setRemoved((eerder) => [...eerder, giftId]);
+
+    const data = new FormData();
+    data.set("giftId", giftId);
+    data.set("listId", listId);
+    try {
+      await deleteGiftAction(data);
+    } catch {
+      setRemoved((eerder) => eerder.filter((id) => id !== giftId));
+      router.refresh();
+    }
+  }
+
+  // Opslaan laat de pagina zelf al opnieuw tekenen; hier hoeven we het
+  // bewerkscherm alleen nog dicht te doen.
   const close = useCallback(() => setEditing({ mode: "closed" }), []);
-  const done = useCallback(() => {
-    setEditing({ mode: "closed" });
-    router.refresh();
-  }, [router]);
 
   return (
     <div className="space-y-4">
@@ -291,7 +374,7 @@ export function GiftManager({
         <AddGiftButton />
       </div>
 
-      {gifts.length === 0 ? (
+      {shown.length === 0 ? (
         <div className="card flex flex-col items-center px-6 py-12 text-center sm:py-14">
           <h2 className="font-semibold text-ink">{t("gift.empty.title")}</h2>
           <p className="mt-1.5 max-w-sm text-sm text-muted">
@@ -301,13 +384,13 @@ export function GiftManager({
         </div>
       ) : (
         <ul className="space-y-3">
-          {gifts.map((gift, index) =>
+          {shown.map((gift, index) =>
             editing.mode === "edit" && editing.giftId === gift.id ? (
               <li key={gift.id} className="card p-5">
                 <GiftEditor
                   draft={editing.draft}
                   action={updateGiftAction.bind(null, listId, gift.id)}
-                  onDone={done}
+                  onDone={close}
                   onCancel={close}
                 />
               </li>
@@ -316,9 +399,11 @@ export function GiftManager({
                 key={gift.id}
                 gift={gift}
                 index={index}
-                order={gifts.map((item) => item.id)}
+                count={shown.length}
                 listId={listId}
                 listIds={listIdsByGroup[gift.groupId] ?? [listId]}
+                onMove={(direction) => move(gift.id, direction)}
+                onRemove={() => remove(gift.id)}
                 onEdit={() =>
                   setEditing({
                     mode: "edit",

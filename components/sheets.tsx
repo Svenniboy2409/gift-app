@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -66,11 +67,16 @@ export function SheetsProvider({
   const pathname = usePathname();
   const [open, setOpen] = useState<{
     kind: "gift" | "list" | "giftLists";
-    /** Loopt op bij elk openen, zodat de inhoud schoon opnieuw begint. */
+    /**
+     * Loopt op bij elk openen, zodat de inhoud schoon opnieuw begint. De teller
+     * gaat bij sluiten niet terug naar nul: anders krijgt het tweede paneel
+     * dezelfde sleutel als het eerste en blijft het oude formulier staan.
+     */
     token: number;
     /** Alleen bij "giftLists": om welk cadeau het gaat. */
     gift?: GiftInLists;
   } | null>(null);
+  const teller = useRef(0);
   const [shownAt, setShownAt] = useState(pathname);
 
   // Ga je naar een andere pagina, dan hoort het paneel dicht — en dicht te
@@ -83,22 +89,10 @@ export function SheetsProvider({
 
   const value = useMemo<Sheets>(
     () => ({
-      openGift: () =>
-        setOpen((previous) => ({
-          kind: "gift",
-          token: (previous?.token ?? 0) + 1,
-        })),
-      openList: () =>
-        setOpen((previous) => ({
-          kind: "list",
-          token: (previous?.token ?? 0) + 1,
-        })),
+      openGift: () => setOpen({ kind: "gift", token: (teller.current += 1) }),
+      openList: () => setOpen({ kind: "list", token: (teller.current += 1) }),
       openGiftLists: (gift) =>
-        setOpen((previous) => ({
-          kind: "giftLists",
-          token: (previous?.token ?? 0) + 1,
-          gift,
-        })),
+        setOpen({ kind: "giftLists", token: (teller.current += 1), gift }),
     }),
     [],
   );
@@ -312,7 +306,6 @@ function AddGiftSheet({
   defaultListId: string | null;
 }) {
   const { t, locale } = useI18n();
-  const router = useRouter();
   const [selected, setSelected] = useState<string[]>(() =>
     defaultListId && lists.some((list) => list.id === defaultListId)
       ? [defaultListId]
@@ -325,8 +318,7 @@ function AddGiftSheet({
 
   const done = useCallback(() => {
     onClose();
-    router.refresh();
-  }, [onClose, router]);
+  }, [onClose]);
 
   function toggle(id: string) {
     setSelected((current) =>
@@ -450,7 +442,6 @@ function GiftListsSheet({
   gift: GiftInLists | null;
 }) {
   const { t } = useI18n();
-  const router = useRouter();
   const [selected, setSelected] = useState<string[]>(gift?.listIds ?? []);
   const [busy, start] = useTransition();
 
@@ -470,7 +461,6 @@ function GiftListsSheet({
       for (const id of selected) data.append("listId", id);
       await setGiftListsAction({}, data);
       onClose();
-      router.refresh();
     });
   }
 

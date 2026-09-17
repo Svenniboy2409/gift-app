@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { claimGiftAction, releaseClaimAction } from "@/lib/actions/claims";
@@ -111,7 +110,6 @@ export function VisitorGiftCard({
   preview?: boolean;
 }) {
   const { t, locale } = useI18n();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -125,7 +123,6 @@ export function VisitorGiftCard({
     data.set("shareCode", shareCode);
     startTransition(async () => {
       await releaseClaimAction(data);
-      router.refresh();
     });
   }
 
@@ -265,7 +262,6 @@ export function VisitorGiftCard({
             defaultName={defaultName}
             onDone={() => {
               setOpen(false);
-              router.refresh();
             }}
             onCancel={() => setOpen(false)}
           />
