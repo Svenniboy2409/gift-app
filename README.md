@@ -24,7 +24,8 @@ maar de eigenaar van de lijst ziet dat nooit.
   als het uitlezen mislukt kun je het cadeau gewoon handmatig invullen.
 - **Lijsten per gelegenheid** met datum, aftellen, omslagkleur en
   zichtbaarheid (privé / alleen vrienden / iedereen met de link / ook op je
-  profiel).
+  profiel). De omslagkleur kleurt de hele lijst mee: kies je blauw, dan worden
+  de deelknop, de opslaanknop en de prijzen ook blauw.
 - **Cadeau-details:** hoe graag je iets wilt op een schuif van vijf sterren,
   gewenst aantal en een notitie voor maat, kleur of variant.
 - **Claimen zonder account.** Een bezoeker vult alleen een naam in. Bij meerdere
@@ -629,6 +630,45 @@ De end-to-end tests controleren dit expliciet: na een claim mag de naam van de
 koper nergens in de HTML van de eigenaar voorkomen, ook niet in het voorbeeld,
 en zijn eigen deel-link hoort bij zijn lijst uit te komen.
 
+## Elke lijst zijn eigen kleur
+
+De kleur die je voor de omslag kiest kleurt de hele lijst mee: de deelknop, de
+opslaanknop in de instellingen, de prijs bij een cadeau, de rand om een veld dat
+je aanklikt. Kies je de blauwe omslag, dan is de lijst blauw.
+
+Dat kon zonder aan al die knoppen te komen, omdat de hele app haar accent al uit
+vier variabelen haalde: `--accent`, `--accent-hover`, `--accent-soft` en
+`--accent-text`. Per omslagkleur staat er nu een klasse in `app/globals.css` die
+die vier opnieuw zet, en `accentClass()` uit `lib/covers.ts` plakt hem op het
+buitenste vak van alles wat bij die ene lijst hoort. De rest erft mee.
+
+Waar hij op staat:
+
+| Plek | Waarom |
+| --- | --- |
+| `/lists/<id>` | de lijst zoals jij hem samenstelt, inclusief het instellingenpaneel |
+| `/l/<code>` en `/p/<id>` | wie je lijst bezoekt ziet dezelfde kleur |
+| Elk kaartje op het overzicht en je profiel | het overzicht laat dezelfde kleuren zien als de lijsten zelf |
+| Het formulier terwijl je kiest | de opslaanknop kleurt mee vóór je opslaat, zodat je ziet wat je kiest |
+
+De balk onderaan, de kop bovenaan en het paneel om een cadeau toe te voegen
+blijven het oranje van de app. Dat is geen vergetelheid: die horen bij de app en
+niet bij één lijst — vanuit dat paneel kun je een cadeau in meerdere lijsten
+tegelijk zetten.
+
+### Hoe de kleuren gekozen zijn
+
+Niet simpelweg de donkere kant van het verloop overnemen: als knopkleur moet er
+witte tekst op te lezen zijn. Elke accentkleur is daarom bijgesteld tot het
+contrast met wit ongeveer 4,6:1 is (in donkere modus ongeveer 6:1 met het vlak
+eronder). Terracotta is de uitzondering en staat er precies zoals hij altijd
+was — dat is de kleur van de app zelf, en die wilden we niet stilletjes
+verschuiven.
+
+`tests/e2e/kleuren.spec.ts` bewaakt dat elke kleur alle vier de variabelen zet
+en dat ze echt van elkaar verschillen: één vergeten regel en je houdt de kleur
+van de vorige lijst over zonder dat iets stukgaat.
+
 ## Opmaak: gemaakt voor de telefoon
 
 De meeste mensen voegen cadeaus toe vanaf hun telefoon, dus daar is de opmaak
@@ -750,6 +790,8 @@ lib/
   lists.ts          lijsten van de eigenaar
   gifts.ts          cadeaus — owner- en bezoekersweergave strikt gescheiden
   claims.ts         reserveren, met een anoniem token in een cookie
+  covers.ts         de omslagkleuren, en welke accentkleur daarbij hoort
+  scroll-lock.ts    de pagina stilhouden zolang er een paneel openstaat
   scraper/          safe-fetch, extractie, prijsparser, shop-regels
   i18n/             Nederlands en Engels
 components/         de interface

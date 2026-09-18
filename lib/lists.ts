@@ -3,6 +3,10 @@ import "server-only";
 import { customAlphabet } from "nanoid";
 import { prisma } from "@/lib/db";
 import { areFriends } from "@/lib/friends";
+import { COVER_COLORS, isCoverColor } from "@/lib/covers";
+
+export { COVER_COLORS, isCoverColor };
+export type { CoverColor } from "@/lib/covers";
 import type { Occasion, Visibility } from "@/lib/generated/prisma/enums";
 
 /**
@@ -14,20 +18,6 @@ const makeShareCode = customAlphabet(
   10,
 );
 
-export const COVER_COLORS = [
-  "terracotta",
-  "olive",
-  "plum",
-  "ocean",
-  "amber",
-  "rose",
-] as const;
-
-export type CoverColor = (typeof COVER_COLORS)[number];
-
-export function isCoverColor(value: string): value is CoverColor {
-  return (COVER_COLORS as readonly string[]).includes(value);
-}
 
 export type ListInput = {
   title: string;

@@ -556,6 +556,172 @@ summary,
   background-image: var(--cover-rose);
 }
 
+/*
+  Accentkleur per lijst.
+
+  De kleur die je voor de omslag kiest kleurt meteen de rest van de lijst mee:
+  de deelknop, de opslaanknop, de prijs van een cadeau. Dat werkt doordat de
+  hele app haar accent uit vier variabelen haalt; hieronder zetten we die op de
+  omslag van de lijst, en alles eronder erft ze.
+
+  De waarden zijn niet zomaar de donkere kant van het verloop: ze zijn
+  bijgesteld tot wit erop leesbaar blijft (ongeveer 4,6:1) en tot de kleur zelf
+  op een lichte achtergrond te lezen is. Terracotta staat er precies zoals hij
+  altijd was — dat is de kleur van de app zelf.
+
+  Dezelfde opbouw als bovenaan dit bestand: eerst licht, dan de systeemvoorkeur
+  voor donker, en daarna de twee expliciete keuzes die daar overheen gaan.
+*/
+.accent-terracotta {
+  --accent: #c4633c;
+  --accent-hover: #ab5230;
+  --accent-soft: #f9e9e0;
+  --accent-text: #ffffff;
+}
+.accent-olive {
+  --accent: #697c49;
+  --accent-hover: #58683d;
+  --accent-soft: #eef2e9;
+  --accent-text: #ffffff;
+}
+.accent-plum {
+  --accent: #9f6289;
+  --accent-hover: #8c5679;
+  --accent-soft: #f1e9ee;
+  --accent-text: #ffffff;
+}
+.accent-ocean {
+  --accent: #487b97;
+  --accent-hover: #3f6a82;
+  --accent-soft: #e7eff3;
+  --accent-text: #ffffff;
+}
+.accent-amber {
+  --accent: #a26926;
+  --accent-hover: #895920;
+  --accent-soft: #f7eee3;
+  --accent-text: #ffffff;
+}
+.accent-rose {
+  --accent: #b25a68;
+  --accent-hover: #a14c5a;
+  --accent-soft: #f4e7e9;
+  --accent-text: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .accent-terracotta {
+    --accent: #e08055;
+    --accent-hover: #eb9670;
+    --accent-soft: #33231b;
+    --accent-text: #1a120d;
+  }
+  .accent-olive {
+    --accent: #8aa758;
+    --accent-hover: #95b069;
+    --accent-soft: #262d1a;
+    --accent-text: #161a0f;
+  }
+  .accent-plum {
+    --accent: #bf8bad;
+    --accent-hover: #c89bb9;
+    --accent-soft: #2c1b26;
+    --accent-text: #190f16;
+  }
+  .accent-ocean {
+    --accent: #6ba2c0;
+    --accent-hover: #7dadc7;
+    --accent-soft: #19272e;
+    --accent-text: #0d171c;
+  }
+  .accent-amber {
+    --accent: #d68a32;
+    --accent-hover: #db9647;
+    --accent-soft: #2e2519;
+    --accent-text: #1d150c;
+  }
+  .accent-rose {
+    --accent: #cd8894;
+    --accent-hover: #d59aa4;
+    --accent-soft: #2e191d;
+    --accent-text: #1c0d0f;
+  }
+}
+
+:root[data-theme="light"] .accent-terracotta {
+  --accent: #c4633c;
+  --accent-hover: #ab5230;
+  --accent-soft: #f9e9e0;
+  --accent-text: #ffffff;
+}
+:root[data-theme="light"] .accent-olive {
+  --accent: #697c49;
+  --accent-hover: #58683d;
+  --accent-soft: #eef2e9;
+  --accent-text: #ffffff;
+}
+:root[data-theme="light"] .accent-plum {
+  --accent: #9f6289;
+  --accent-hover: #8c5679;
+  --accent-soft: #f1e9ee;
+  --accent-text: #ffffff;
+}
+:root[data-theme="light"] .accent-ocean {
+  --accent: #487b97;
+  --accent-hover: #3f6a82;
+  --accent-soft: #e7eff3;
+  --accent-text: #ffffff;
+}
+:root[data-theme="light"] .accent-amber {
+  --accent: #a26926;
+  --accent-hover: #895920;
+  --accent-soft: #f7eee3;
+  --accent-text: #ffffff;
+}
+:root[data-theme="light"] .accent-rose {
+  --accent: #b25a68;
+  --accent-hover: #a14c5a;
+  --accent-soft: #f4e7e9;
+  --accent-text: #ffffff;
+}
+
+:root[data-theme="dark"] .accent-terracotta {
+  --accent: #e08055;
+  --accent-hover: #eb9670;
+  --accent-soft: #33231b;
+  --accent-text: #1a120d;
+}
+:root[data-theme="dark"] .accent-olive {
+  --accent: #8aa758;
+  --accent-hover: #95b069;
+  --accent-soft: #262d1a;
+  --accent-text: #161a0f;
+}
+:root[data-theme="dark"] .accent-plum {
+  --accent: #bf8bad;
+  --accent-hover: #c89bb9;
+  --accent-soft: #2c1b26;
+  --accent-text: #190f16;
+}
+:root[data-theme="dark"] .accent-ocean {
+  --accent: #6ba2c0;
+  --accent-hover: #7dadc7;
+  --accent-soft: #19272e;
+  --accent-text: #0d171c;
+}
+:root[data-theme="dark"] .accent-amber {
+  --accent: #d68a32;
+  --accent-hover: #db9647;
+  --accent-soft: #2e2519;
+  --accent-text: #1d150c;
+}
+:root[data-theme="dark"] .accent-rose {
+  --accent: #cd8894;
+  --accent-hover: #d59aa4;
+  --accent-soft: #2e191d;
+  --accent-text: #1c0d0f;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

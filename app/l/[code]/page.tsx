@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { accentClass } from "@/lib/covers";
 import { canEditList } from "@/lib/collab";
 import { getListForVisitor, getVisitorListTitle } from "@/lib/gifts";
 import { readClaimerName, readClaimerToken } from "@/lib/claims";
@@ -49,7 +50,10 @@ export default async function SharedListPage({
     <>
       <PlainHeader />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12">
+      {/* Ook voor wie de lijst alleen bekijkt: de omslagkleur kleurt mee. */}
+      <main
+        className={`${accentClass(list.coverColor)} mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12`}
+      >
         <VisitorListView list={list} claimerName={claimerName ?? ""} />
       </main>
 

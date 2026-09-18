@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { accentClass } from "@/lib/covers";
 import { daysUntil, formatDate, type Locale, type Translator } from "@/lib/i18n";
 
 export type ListCardData = {
@@ -50,7 +51,9 @@ export function ListCard({
     <Link
       href={href}
       prefetch
-      className="card card-hover group flex flex-col overflow-hidden"
+      // Het kaartje kleurt mee met zijn eigen omslag, zodat het overzicht
+      // dezelfde kleuren laat zien als de lijst zelf.
+      className={`${accentClass(list.coverColor)} card card-hover group flex flex-col overflow-hidden`}
     >
       <div
         className={`cover-${list.coverColor} relative h-28 shrink-0 overflow-hidden`}

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { getParticipants } from "@/lib/collab";
 import { getListForOwner, type VisitorList } from "@/lib/gifts";
 import { getTranslator } from "@/lib/i18n/server";
+import { accentClass } from "@/lib/covers";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { VisitorListView } from "@/components/visitor-list-view";
 
@@ -54,7 +55,9 @@ export default async function PreviewPage({
     <>
       <PlainHeader />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12">
+      <main
+        className={`${accentClass(list.coverColor)} mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12`}
+      >
         <div className="card mb-6 flex flex-wrap items-center gap-3 p-4">
           <span className="min-w-0 flex-1">
             <span className="block font-semibold text-ink">

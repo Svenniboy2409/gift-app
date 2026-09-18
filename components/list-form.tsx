@@ -6,15 +6,7 @@ import type { FormState } from "@/lib/actions/auth";
 import { useI18n } from "@/lib/i18n/client";
 import type { MessageKey } from "@/lib/i18n";
 import { OCCASIONS, VISIBILITIES } from "@/lib/validation";
-
-const COVER_COLORS = [
-  "terracotta",
-  "olive",
-  "plum",
-  "ocean",
-  "amber",
-  "rose",
-] as const;
+import { COVER_COLORS, accentClass } from "@/lib/covers";
 
 export type ListFormValues = {
   title: string;
@@ -98,7 +90,9 @@ export function ListForm({
   }, [state.success, onSaved]);
 
   return (
-    <form action={formAction} className="space-y-5">
+    // De gekozen kleur is meteen te zien: de opslaanknop en het vinkje bij de
+    // zichtbaarheid kleuren mee terwijl je nog aan het kiezen bent.
+    <form action={formAction} className={`${accentClass(color)} space-y-5`}>
       <div>
         <label className="label" htmlFor="title">
           {t("list.field.title")}

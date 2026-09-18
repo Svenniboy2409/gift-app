@@ -12,6 +12,7 @@ import {
   isHiddenOnProfile,
 } from "@/lib/collab";
 import { getFriends } from "@/lib/friends";
+import { accentClass } from "@/lib/covers";
 import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
@@ -75,7 +76,9 @@ export default async function ListPage({
               });
 
   return (
-    <div className="space-y-6">
+    // De kleur van de omslag kleurt de hele lijst mee: de deelknop, de
+    // opslaanknop in de instellingen, de prijzen. Zie lib/covers.ts.
+    <div className={`${accentClass(list.coverColor)} space-y-6`}>
       <div>
         <Link href="/dashboard" prefetch className="btn btn-ghost btn-sm -ml-3 mb-3">
           <svg
