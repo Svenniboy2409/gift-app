@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createList, openGiftSheet, register } from "./helpers";
+import {
+  createList,
+  openGiftSheet,
+  openManualGiftForm,
+  register,
+} from "./helpers";
 
 /**
  * De app op telefoonformaat: navigatiebalk onderaan, het schuifpaneel om iets
@@ -564,4 +569,140 @@ test("de tabbladen staan al klaar voordat je erop tikt", async ({ page }) => {
   await tik("Sociaal", "/friends");
   await tik("Account", "/account");
   await tik("Lijsten", "/dashboard");
+});
+
+/**
+ * Staat er een paneel open, dan hoort de pagina eronder stil te staan.
+ *
+ * Op een iPhone is `overflow: hidden` daarvoor niet genoeg — Safari laat je
+ * met je vinger gewoon doorbladeren. Vandaar dat de body echt wordt
+ * vastgezet; dat is wat deze test controleert, samen met het terugzetten op de
+ * plek waar je gebleven was.
+ */
+test("de pagina eronder staat stil zolang een paneel openstaat", async ({
+  page,
+}) => {
+  await register(page, "Stilstaander", "lock");
+  await createList(page, "Lange lijst");
+  for (const naam of ["Een", "Twee", "Drie", "Vier", "Vijf", "Zes"]) {
+    await openManualGiftForm(page);
+    const invullen = page.getByRole("dialog");
+    await invullen.getByLabel("Naam", { exact: true }).fill(naam);
+    await invullen.getByRole("button", { name: "Cadeau opslaan" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+
+  // Een eindje naar beneden, zodat er iets te verschuiven valt.
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await page.waitForTimeout(200);
+  const begonBij = await page.evaluate(() => window.scrollY);
+  expect(begonBij).toBeGreaterThan(100);
+
+  await openGiftSheet(page);
+
+  // Dít is het stukje dat een iPhone nodig heeft: de body staat echt vast.
+  expect(await page.evaluate(() => getComputedStyle(document.body).position)).toBe(
+    "fixed",
+  );
+
+  // En er valt niets meer te verschuiven, ook niet van buitenaf.
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await page.mouse.wheel(0, 500);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // Terug op de plek waar je was, niet opeens bovenaan.
+  expect(await page.evaluate(() => window.scrollY)).toBe(begonBij);
+  expect(await page.evaluate(() => getComputedStyle(document.body).position)).not.toBe(
+    "fixed",
+  );
+
+  // Maar breng een paneel je naar een andere pagina — een nieuwe lijst opent
+  // zichzelf — dan begint die gewoon bovenaan.
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await page.waitForTimeout(200);
+  await page.locator(".tabbar-item", { hasText: "Lijsten" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await createList(page, "Van onderaf");
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+/**
+ * In een paneel valt zijwaarts niets te halen; het hoort dus niet te wiebelen.
+ *
+ * Het heen en weer schuiven dat op een iPhone opviel krijgen we in een
+ * kale Chromium niet voor elkaar, dus leggen we de regel vast die het
+ * onmogelijk maakt — samen met de uitkomst dat er niets uitsteekt.
+ */
+test("een paneel schuift niet zijwaarts", async ({ page }) => {
+  await register(page, "Schuiver", "zij");
+  await createList(page, "Zijlijst");
+
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.waitForTimeout(400);
+
+  const beweging = await page.evaluate(() => {
+    const vak = document.querySelector(
+      '[role="dialog"] .overflow-y-auto',
+    ) as HTMLElement;
+    vak.scrollLeft = 300;
+    return {
+      scrollLeft: vak.scrollLeft,
+      breder: vak.scrollWidth > vak.clientWidth,
+      overflowX: getComputedStyle(vak).overflowX,
+      overflowY: getComputedStyle(vak).overflowY,
+    };
+  });
+  expect(beweging).toEqual({
+    scrollLeft: 0,
+    breder: false,
+    overflowX: "hidden",
+    // Op en neer moet natuurlijk wél kunnen.
+    overflowY: "auto",
+  });
+});
+
+/**
+ * De opslaanknop staat onderaan een lang formulier. Hij hoort meteen in beeld
+ * te staan, en pas op zijn eigen plek te blijven zodra die in zicht komt.
+ */
+test("de opslaanknop schuift mee tot hij op zijn eigen plek is", async ({
+  page,
+}) => {
+  await register(page, "Opslaander", "opslaan");
+  await createList(page, "Knoplijst");
+
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  const paneel = page.getByRole("dialog");
+  await paneel.waitFor();
+  await page.waitForTimeout(500);
+
+  const knop = paneel.getByRole("button", { name: "Opslaan" });
+  const scherm = await page.evaluate(() => window.innerHeight);
+
+  // Meteen zichtbaar, zonder te scrollen.
+  const zwevend = (await knop.boundingBox())!;
+  expect(zwevend.y + zwevend.height).toBeLessThanOrEqual(scherm);
+  // En als balk herkenbaar, zodat het formulier er niet doorheen schemert.
+  await expect(knop.locator("xpath=..")).toHaveClass(/border-t/);
+
+  // Naar de plek waar de knop echt hoort: dan is het weer een gewone knop.
+  await page.evaluate(() => {
+    const vak = document.querySelector(
+      '[role="dialog"] .overflow-y-auto',
+    ) as HTMLElement;
+    vak.scrollTop = 620;
+  });
+  await page.waitForTimeout(400);
+
+  const thuis = (await knop.boundingBox())!;
+  expect(thuis.y + thuis.height).toBeLessThanOrEqual(scherm);
+  expect(thuis.y).toBeLessThan(zwevend.y);
+  await expect(knop.locator("xpath=..")).not.toHaveClass(/border-t/);
 });

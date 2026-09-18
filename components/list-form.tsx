@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/lib/actions/auth";
 import { useI18n } from "@/lib/i18n/client";
@@ -25,6 +25,37 @@ export type ListFormValues = {
   visibility: string;
 };
 
+/**
+ * De opslaanknop staat onderaan het formulier, maar dat is op een telefoon een
+ * heel eind naar beneden — je opent de instellingen en de knop staat buiten
+ * beeld. Daarom blijft hij onderaan het scherm zweven zolang zijn eigen plek
+ * nog niet in zicht is, en gaat hij daar staan zodra je er bent.
+ *
+ * `position: sticky` met `bottom: 0` doet precies dat. Het enige wat ontbreekt
+ * is weten wélke van de twee het op dit moment is: zwevend hoort er een randje
+ * en een achtergrond omheen, zodat het formulier er niet doorheen schemert, en
+ * op zijn eigen plek juist niet. Dat leest een klein onzichtbaar blokje eronder
+ * af: is dát in beeld, dan is de knop thuis.
+ */
+function useZweeft() {
+  const baken = useRef<HTMLDivElement>(null);
+  const [zweeft, setZweeft] = useState(true);
+
+  useEffect(() => {
+    const node = baken.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+
+    const kijker = new IntersectionObserver(
+      ([blokje]) => setZweeft(!blokje.isIntersecting),
+      { threshold: 1 },
+    );
+    kijker.observe(node);
+    return () => kijker.disconnect();
+  }, []);
+
+  return { baken, zweeft };
+}
+
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const { t } = useI18n();
@@ -41,6 +72,7 @@ export function ListForm({
   submitLabel,
   children,
   onSaved,
+  stickySubmit = false,
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   initial: ListFormValues;
@@ -48,9 +80,16 @@ export function ListForm({
   children?: React.ReactNode;
   /** Wordt aangeroepen zodra het opslaan gelukt is. */
   onSaved?: () => void;
+  /**
+   * Laat de opslaanknop onderaan het scherm meeschuiven zolang zijn eigen plek
+   * nog niet in beeld is. Bedoeld voor het schuifpaneel; op een gewone pagina
+   * zou hij onder de navigatiebalk terechtkomen.
+   */
+  stickySubmit?: boolean;
 }) {
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
+  const { baken, zweeft } = useZweeft();
   const [color, setColor] = useState(initial.coverColor);
   const [visibility, setVisibility] = useState(initial.visibility);
 
@@ -193,10 +232,20 @@ export function ListForm({
         </p>
       )}
 
-      <div className="flex flex-col items-stretch gap-3 pt-1 sm:flex-row sm:items-center">
+      <div
+        className={`flex flex-col items-stretch gap-3 pt-1 sm:flex-row sm:items-center ${
+          stickySubmit ? "sticky bottom-0 z-10" : ""
+        } ${
+          stickySubmit && zweeft
+            ? "-mx-5 border-t border-line bg-raised px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
+            : ""
+        }`}
+      >
         <SubmitButton label={submitLabel} />
         {children}
       </div>
+      {/* Het blokje waaraan de knop merkt of hij thuis is; zie useZweeft. */}
+      <div ref={baken} aria-hidden className="h-px" />
     </form>
   );
 }

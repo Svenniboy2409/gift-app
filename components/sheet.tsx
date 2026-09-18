@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
+import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 
 /**
  * Een paneel dat van onderen omhoog schuift, zoals in een telefoon-app.
@@ -56,9 +57,9 @@ export function Sheet({
   useEffect(() => {
     if (phase === "closed") return;
 
-    // De pagina eronder mag niet meescrollen zolang het paneel openstaat.
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // De pagina eronder staat stil zolang het paneel openstaat — ook onder je
+    // vinger, wat op een iPhone een eigen aanpak vraagt (zie lib/scroll-lock).
+    lockScroll();
 
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") requestClose();
@@ -66,7 +67,7 @@ export function Sheet({
     window.addEventListener("keydown", onKey);
 
     return () => {
-      document.body.style.overflow = previous;
+      unlockScroll();
       window.removeEventListener("keydown", onKey);
     };
   }, [phase, requestClose]);
@@ -158,9 +159,18 @@ export function Sheet({
           </h2>
         </div>
 
-        {/* Alleen de inhoud scrollt, zodat de titel blijft staan. */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+        {/* Alleen de inhoud scrollt, zodat de titel blijft staan. Uitsluitend
+            op en neer: zijwaarts valt er in een paneel niets te halen, en een
+            veld dat per ongeluk te breed is hoort het niet te laten wiebelen. */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5">
           {children}
+          {/* De ruimte onderaan is een blokje en geen marge op het vak zelf:
+              een knop die met `sticky bottom-0` meeschuift stopt namelijk bij
+              de marge, en dan schemert de inhoud er onderdoor. */}
+          <div
+            aria-hidden
+            className="h-[calc(1.25rem+env(safe-area-inset-bottom))]"
+          />
         </div>
       </div>
     </div>

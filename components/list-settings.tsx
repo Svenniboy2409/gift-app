@@ -65,6 +65,7 @@ export function ListSettings({
                 initial={initial}
                 submitLabel={t("list.save")}
                 onSaved={close}
+                stickySubmit
               />
 
               {children}

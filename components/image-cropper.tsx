@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/client";
+import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 
 /**
  * Een foto bijsnijden voordat hij wordt opgeslagen.
@@ -42,6 +43,15 @@ export function ImageCropper({
   onDone: (file: File) => void;
 }) {
   const { t } = useI18n();
+
+  // Net als bij een schuifpaneel: de pagina eronder staat stil. Meestal opent
+  // het bijsnijden al vanuit een paneel — dat telt elkaar netjes op — maar
+  // vanaf de lijstpagina bewerk je een cadeau zonder paneel eromheen.
+  useEffect(() => {
+    lockScroll();
+    return unlockScroll;
+  }, []);
+
   const image = useRef<HTMLImageElement>(null);
   const drag = useRef<Drag | null>(null);
 

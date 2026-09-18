@@ -646,6 +646,26 @@ op gebouwd; het bureaublad krijgt vanaf `md` de bredere variant.
   paneel gecentreerd in beeld in plaats van tegen de onderrand. Sluiten gaat
   door de bovenrand omlaag te slepen, naast het paneel te tikken of met Escape;
   bij slepen loopt de beweging door vanaf de plek waar je losliet.
+- **De pagina eronder staat stil** zolang er een paneel openstaat
+  (`lib/scroll-lock.ts`). `overflow: hidden` op de body lijkt genoeg en is dat
+  op een bureaublad ook, maar Safari op de iPhone laat je er met je vinger
+  gewoon doorheen bladeren — en veert alle kanten op mee, waardoor het paneel
+  stilstaat terwijl alles eronder beweegt. Daarom zetten we de body vast met
+  `position: fixed` op precies de plek waar je gebleven was, en zetten we hem
+  daar bij het sluiten weer neer. Een teller houdt bij hoeveel lagen er open
+  staan, zodat het bijsnijden van een foto bovenop een paneel het slot niet te
+  vroeg opent.
+- **In een paneel valt zijwaarts niets te halen.** Het scrollvak is
+  `overflow-y: auto` én `overflow-x: hidden`: één veld dat per ongeluk te breed
+  is, zou anders het hele paneel laten wiebelen.
+- **De opslaanknop laat zich niet zoeken.** In de instellingen van een lijst
+  staat hij onderaan een lang formulier, dus buiten beeld zodra je het paneel
+  opent. Met `position: sticky` en `bottom: 0` zweeft hij onderaan het scherm
+  mee — als balk, met een randje en een achtergrond — tot je bij zijn eigen plek
+  bent; daar wordt het weer een gewone knop. Welke van de twee het is leest een
+  onzichtbaar blokje eronder af (`useZweeft` in `components/list-form.tsx`).
+  Alleen in het paneel: op de pagina om een lijst te maken zou hij onder de
+  navigatiebalk schuiven.
 - **Veilige zones**: `viewport-fit=cover` plus `env(safe-area-inset-*)`, zodat
   niets onder de inkeping of de streep van de iPhone verdwijnt.
 - **Invoervelden op 16 px.** Onder die grens zoomt Safari op iPhone het scherm
@@ -678,7 +698,16 @@ npm run test:e2e  # Playwright: de volledige doorloop plus de bewaarknop
 De e2e-tests draaien in twee smaken: `chromium` op bureaubladformaat en
 `mobiel` op de maat van een iPhone. Die laatste bewaakt de navigatiebalk, en
 controleert dat geen enkele pagina zijwaarts wegschuift en dat de laatste knop
-van een formulier niet achter de balk valt.
+van een formulier niet achter de balk valt. Ook de drie dingen hierboven staan
+daar: de pagina eronder staat stil (en je komt terug waar je was), een paneel
+schuift niet zijwaarts, en de opslaanknop is meteen te zien én gaat op zijn
+eigen plek staan zodra die in zicht komt.
+
+Wat een kale Chromium niet kan nadoen zeggen we er eerlijk bij: het bladeren
+met je vinger achter een open paneel, en het zijwaarts wiebelen, zijn allebei
+gedrag van Safari op een iPhone. Die tests leggen daarom de regel vast die het
+onmogelijk maakt — een vastgezette body, `overflow-x: hidden` — naast de
+uitkomst die wél te meten is.
 
 `tests/e2e/snelheid.spec.ts` bewaakt dat verschuiven en weggooien meteen te
 zien zijn: er wordt drie keer achter elkaar op hetzelfde pijltje geklikt zonder
