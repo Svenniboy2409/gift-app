@@ -127,6 +127,30 @@ export type VisitorList = {
  * `claimerToken` komt uit het cookie van de bezoeker en bepaalt welke claims
  * "van mij" zijn.
  */
+/**
+ * Alleen wat er in de titelbalk van de browser komt te staan.
+ *
+ * generateMetadata draait als een eigen rendering, náást de pagina zelf. Liet
+ * je daar de volledige lijst ophalen, dan gebeurde alles twee keer: de lijst,
+ * de eigenaar, de deelnemers, de cadeaus én de claims. Voor een regel tekst is
+ * dat zonde.
+ *
+ * Een privélijst en een vriendenlijst geven hier niets terug, net als
+ * getListForVisitor: de titel mag niet langs de voordeur naar buiten lekken.
+ */
+export async function getVisitorListTitle(shareCode: string) {
+  const [list] = await prisma.$queryRaw<
+    { title: string; description: string | null; ownerName: string }[]
+  >`
+    SELECT l."title", l."description", u."name" AS "ownerName"
+      FROM "List" l
+      JOIN "User" u ON u."id" = l."userId"
+     WHERE l."shareCode" = ${shareCode}
+       AND l."visibility" NOT IN ('PRIVATE', 'FRIENDS')
+  `;
+  return list ?? null;
+}
+
 export async function getListForVisitor(
   shareCode: string,
   claimerToken: string | null,

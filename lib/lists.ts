@@ -153,6 +153,19 @@ export async function getListTitles(userId: string) {
  * tenzij een deelnemer hem van zijn eigen profiel heeft gehaald. Vrienden zien
  * er de vriendenlijsten bij.
  */
+/**
+ * Alleen de naam, voor de titelbalk. Zie de uitleg bij getVisitorListTitle:
+ * generateMetadata is een eigen rendering, dus het volledige profiel ophalen
+ * betekende alles twee keer doen.
+ */
+export async function getProfileName(handle: string) {
+  const user = await prisma.user.findUnique({
+    where: { handle },
+    select: { name: true },
+  });
+  return user?.name ?? null;
+}
+
 export async function getPublicProfile(
   handle: string,
   /** Wie er kijkt, als diegene is ingelogd. Vrienden zien meer. */

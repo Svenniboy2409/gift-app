@@ -70,3 +70,61 @@ test("weggooien haalt het cadeau meteen uit beeld", async ({ page }) => {
   await page.reload();
   expect(await volgorde(page)).toEqual(["Blijft"]);
 });
+
+/**
+ * De tabbladen en de lijstkaartjes halen hun pagina alvast op. Klikken hoort
+ * die pagina dan niet meer bij de server op te hoeven halen: hij staat al
+ * klaar. Zonder dat vooruit ophalen is elke tik een volledige ronde naar de
+ * server, en dat is precies wat er seconden kostte.
+ */
+test("tabbladen en lijsten staan al klaar voordat je klikt", async ({
+  page,
+}) => {
+  await register(page, "Snelklikker", "prefetch");
+  await createList(page, "Vooruitlijst");
+  await addGift(page, "Iets moois");
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { name: "Vooruitlijst" })).toBeVisible();
+  // Even de tijd geven om alles op de achtergrond op te halen.
+  await page.waitForTimeout(3_000);
+
+  /** Alles wat de browser bij de server opvraagt terwijl we klikken. */
+  const opgevraagd: string[] = [];
+  page.on("request", (verzoek) => {
+    const url = new URL(verzoek.url());
+    if (url.searchParams.has("_rsc")) opgevraagd.push(url.pathname);
+  });
+
+  /**
+   * Alleen het adres waar we heen gaan telt: wat de nieuwe pagina daarna zelf
+   * vooruit ophaalt gebeurt op de achtergrond, en daar wacht niemand op.
+   */
+  function nietOpgehaald(pad: string) {
+    expect(opgevraagd.filter((adres) => adres === pad)).toEqual([]);
+  }
+
+  opgevraagd.length = 0;
+  await page
+    .locator("a")
+    .filter({ has: page.getByRole("heading", { name: "Vooruitlijst" }) })
+    .first()
+    .click();
+  await expect(page.getByRole("heading", { name: "Iets moois" })).toBeVisible();
+  nietOpgehaald(new URL(page.url()).pathname);
+
+  opgevraagd.length = 0;
+  await page.getByRole("link", { name: "Terug naar mijn lijsten" }).click();
+  await page.waitForURL(/\/dashboard$/);
+  nietOpgehaald("/dashboard");
+
+  opgevraagd.length = 0;
+  await page.getByRole("link", { name: "Sociaal" }).first().click();
+  await page.waitForURL(/\/friends$/);
+  nietOpgehaald("/friends");
+
+  opgevraagd.length = 0;
+  await page.getByRole("link", { name: "Account" }).first().click();
+  await page.waitForURL(/\/account$/);
+  nietOpgehaald("/account");
+});

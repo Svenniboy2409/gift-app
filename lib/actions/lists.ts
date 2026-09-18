@@ -13,6 +13,17 @@ import {
 import { listSchema } from "@/lib/validation";
 import type { FormState } from "@/lib/actions/auth";
 
+/**
+ * De pagina's waar een lijst op te zien is. Het overzicht en je profiel tonen
+ * allebei een kaartje met de titel, de kleur en het aantal cadeaus, en sinds de
+ * app die pagina's vooruit ophaalt moeten ze alle drie mee.
+ */
+function ververs(listId?: string) {
+  if (listId) revalidatePath(`/lists/${listId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/account");
+}
+
 function readListForm(formData: FormData) {
   return listSchema.safeParse({
     title: formData.get("title"),
@@ -51,7 +62,7 @@ export async function createListAction(
     visibility: parsed.data.visibility,
   });
 
-  revalidatePath("/dashboard");
+  ververs();
   redirect(`/lists/${list.id}`);
 }
 
@@ -78,8 +89,7 @@ export async function updateListAction(
   });
   if (!ok) return { error: "generic" };
 
-  revalidatePath(`/lists/${listId}`);
-  revalidatePath("/dashboard");
+  ververs(listId);
   return { success: "saved" };
 }
 
@@ -88,7 +98,7 @@ export async function deleteListAction(formData: FormData) {
   const listId = String(formData.get("listId") ?? "");
   if (!listId) return;
   await deleteList(user.id, listId);
-  revalidatePath("/dashboard");
+  ververs();
   redirect("/dashboard");
 }
 
@@ -97,6 +107,5 @@ export async function regenerateShareCodeAction(formData: FormData) {
   const listId = String(formData.get("listId") ?? "");
   if (!listId) return;
   await regenerateShareCode(user.id, listId);
-  revalidatePath(`/lists/${listId}`);
-  revalidatePath("/dashboard");
+  ververs(listId);
 }

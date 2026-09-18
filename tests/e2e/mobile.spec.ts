@@ -528,3 +528,40 @@ test("de knoppen bij een cadeau passen allemaal op het scherm", async ({
   expect(bewerken.x).toBeLessThan(breedte / 3);
   expect(bewerken.y).toBeGreaterThan(foto.y);
 });
+
+/**
+ * Het tabblad wisselen mag geen ronde naar de server kosten: de balk haalt de
+ * drie pagina's alvast op. Dit is de plek waar traagheid het meest opviel —
+ * je tikt op een tabblad en er gebeurt seconden niets.
+ */
+test("de tabbladen staan al klaar voordat je erop tikt", async ({ page }) => {
+  await register(page, "Tikker", "tab");
+
+  const balk = page.getByRole("navigation", { name: "Hoofdnavigatie" });
+  await expect(balk).toBeVisible();
+  // Even de tijd om de drie pagina's op de achtergrond op te halen.
+  await page.waitForTimeout(3_000);
+
+  /** Alles wat de browser bij de server opvraagt, terwijl we tikken. */
+  const opgevraagd: string[] = [];
+  page.on("request", (verzoek) => {
+    const url = new URL(verzoek.url());
+    if (url.searchParams.has("_rsc")) opgevraagd.push(url.pathname);
+  });
+
+  /**
+   * Tik op een tabblad en kijk of de pagina zelf nog opgehaald moest worden.
+   * Wat de nieuwe pagina daarna op de achtergrond ophaalt telt niet mee — daar
+   * wacht niemand op — dus we kijken alleen naar het adres waar we heen gaan.
+   */
+  async function tik(naam: string, pad: string) {
+    opgevraagd.length = 0;
+    await balk.getByRole("link", { name: naam }).click();
+    await page.waitForURL(new RegExp(`${pad}$`));
+    expect(opgevraagd.filter((adres) => adres === pad)).toEqual([]);
+  }
+
+  await tik("Sociaal", "/friends");
+  await tik("Account", "/account");
+  await tik("Lijsten", "/dashboard");
+});

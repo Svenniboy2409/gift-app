@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getPublicProfile } from "@/lib/lists";
+import { getProfileName, getPublicProfile } from "@/lib/lists";
 import { getTranslator } from "@/lib/i18n/server";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { relationTo } from "@/lib/friends";
@@ -15,9 +15,9 @@ export async function generateMetadata({
   params: Promise<{ handle: string }>;
 }): Promise<Metadata> {
   const { handle } = await params;
-  const profile = await getPublicProfile(handle);
+  const naam = await getProfileName(handle);
   return {
-    title: profile ? `${profile.name} — Wenslijst` : "Wenslijst",
+    title: naam ? `${naam} — Wenslijst` : "Wenslijst",
     robots: { index: false, follow: false },
   };
 }

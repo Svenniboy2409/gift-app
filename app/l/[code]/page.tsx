@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { canEditList } from "@/lib/collab";
-import { getListForVisitor } from "@/lib/gifts";
+import { getListForVisitor, getVisitorListTitle } from "@/lib/gifts";
 import { readClaimerName, readClaimerToken } from "@/lib/claims";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { VisitorListView } from "@/components/visitor-list-view";
@@ -13,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ code: string }>;
 }): Promise<Metadata> {
   const { code } = await params;
-  const list = await getListForVisitor(code, null);
+  const list = await getVisitorListTitle(code);
   if (!list) return { title: "Wenslijst" };
   return {
     title: `${list.title} — ${list.ownerName}`,

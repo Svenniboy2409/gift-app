@@ -56,6 +56,7 @@ export default async function AccountPage() {
       <section className="card relative flex flex-col items-center px-5 py-7 text-center sm:px-8">
         <Link
           href="/settings"
+          prefetch
           className="btn btn-ghost absolute right-1.5 top-1.5 px-2 text-muted"
           aria-label={t("nav.settings")}
           title={t("nav.settings")}

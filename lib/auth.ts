@@ -73,6 +73,8 @@ export type SessionUser = {
   locale: string;
   avatarUrl: string | null;
   bio: string | null;
+  /** De code achter je eigen uitnodigingslink; null tot je hem voor het eerst nodig hebt. */
+  inviteCode: string | null;
 };
 
 /**
@@ -97,6 +99,8 @@ export const getCurrentUser = cache(
         locale: true,
         avatarUrl: true,
         bio: true,
+        /** Scheelt een losse vraag op het tabblad Sociaal. */
+        inviteCode: true,
       },
     });
     return user;

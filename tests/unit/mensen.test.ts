@@ -2,6 +2,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { getFriends } from "@/lib/friends";
 import { getListInvites, inviteToList } from "@/lib/collab";
+import { getVisitorListTitle } from "@/lib/gifts";
+import type { Visibility } from "@/lib/generated/prisma/enums";
 
 /**
  * `getFriends` en `getListInvites` zijn met de hand geschreven zoekopdrachten,
@@ -77,5 +79,37 @@ describe("getListInvites", () => {
     expect(uitnodigingen).toHaveLength(1);
     expect(uitnodigingen[0].userId).toBe(gast);
     expect(uitnodigingen[0].name).toBe("gast");
+  });
+});
+
+describe("getVisitorListTitle", () => {
+  it("geeft de titel voor een deelbare lijst, en zwijgt over de rest", async () => {
+    const eigenaar = await maakGebruiker("deler");
+
+    async function maakLijst(visibility: Visibility, code: string) {
+      await prisma.list.create({
+        data: {
+          userId: eigenaar,
+          title: `Lijst ${code}`,
+          shareCode: `${code}-${stempel}`,
+          visibility,
+        },
+      });
+      return `${code}-${stempel}`;
+    }
+
+    const metLink = await maakLijst("LINK", "link");
+    const gevonden = await getVisitorListTitle(metLink);
+    expect(gevonden?.title).toBe("Lijst link");
+    expect(gevonden?.ownerName).toBe("deler");
+
+    expect(await getVisitorListTitle(await maakLijst("PUBLIC", "open"))).not.toBeNull();
+
+    // Een privélijst en een vriendenlijst mogen hun titel niet langs de
+    // voordeur prijsgeven: getListForVisitor doet dat ook niet.
+    expect(await getVisitorListTitle(await maakLijst("PRIVATE", "prive"))).toBeNull();
+    expect(await getVisitorListTitle(await maakLijst("FRIENDS", "vrienden"))).toBeNull();
+
+    expect(await getVisitorListTitle("bestaat-niet")).toBeNull();
   });
 });

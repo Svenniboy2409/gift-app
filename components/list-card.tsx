@@ -47,7 +47,11 @@ export function ListCard({
   const countdown = countdownLabel(list.eventDate, t, locale);
 
   return (
-    <Link href={href} className="card card-hover group flex flex-col overflow-hidden">
+    <Link
+      href={href}
+      prefetch
+      className="card card-hover group flex flex-col overflow-hidden"
+    >
       <div
         className={`cover-${list.coverColor} relative h-28 shrink-0 overflow-hidden`}
       >

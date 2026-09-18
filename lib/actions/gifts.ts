@@ -13,6 +13,19 @@ import {
 import { giftSchema, parsePriceInput } from "@/lib/validation";
 import type { FormState } from "@/lib/actions/auth";
 
+/**
+ * Wat er allemaal verandert als de cadeaus van een lijst veranderen.
+ *
+ * Niet alleen de lijst zelf: het overzicht en je profiel tonen per lijst het
+ * aantal cadeaus. Sinds de app die pagina's vooruit ophaalt zou zo'n kaartje
+ * anders een tijdje het oude aantal blijven laten zien.
+ */
+function ververs(listId: string) {
+  if (listId) revalidatePath(`/lists/${listId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/account");
+}
+
 function readGiftForm(formData: FormData) {
   return giftSchema.safeParse({
     title: formData.get("title"),
@@ -59,7 +72,7 @@ export async function createGiftAction(
   const gift = await createGift(user.id, listId, toGiftInput(parsed.data));
   if (!gift) return { error: "generic" };
 
-  revalidatePath(`/lists/${listId}`);
+  ververs(listId);
   return { success: "saved" };
 }
 
@@ -96,10 +109,9 @@ export async function createGiftInListAction(
     // createGift controleert zelf of de lijst van deze gebruiker is.
     const gift = await createGift(user.id, listId, input, groupId);
     if (!gift) return { error: "generic" };
-    revalidatePath(`/lists/${listId}`);
+    ververs(listId);
   }
 
-  revalidatePath("/dashboard");
   return { success: "saved" };
 }
 
@@ -128,7 +140,7 @@ export async function deleteGiftAction(formData: FormData) {
   const listId = String(formData.get("listId") ?? "");
   if (!giftId) return;
   await deleteGift(user.id, giftId);
-  revalidatePath(`/lists/${listId}`);
+  ververs(listId);
 }
 
 export async function moveGiftAction(formData: FormData) {
@@ -162,7 +174,6 @@ export async function setGiftListsAction(
   if (result === "none") return { error: "choose-list" };
   if (result === "unknown") return { error: "generic" };
 
-  for (const listId of listIds) revalidatePath(`/lists/${listId}`);
-  revalidatePath("/dashboard");
+  for (const listId of listIds) ververs(listId);
   return { success: "saved" };
 }

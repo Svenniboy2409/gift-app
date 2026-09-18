@@ -77,7 +77,7 @@ export default async function ListPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard" className="btn btn-ghost btn-sm -ml-3 mb-3">
+        <Link href="/dashboard" prefetch className="btn btn-ghost btn-sm -ml-3 mb-3">
           <svg
             viewBox="0 0 24 24"
             fill="none"

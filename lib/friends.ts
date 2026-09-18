@@ -61,20 +61,35 @@ export async function getFriends(userId: string): Promise<FriendProfile[]> {
   `;
 }
 
+/**
+ * De openstaande verzoeken, elk in één zoekopdracht.
+ *
+ * Via de relatie haalde Prisma eerst de verzoeken op en daarna de mensen
+ * erbij — twee ritjes per blok, en op het tabblad Sociaal staan er drie van
+ * zulke blokken onder elkaar.
+ */
 export async function getIncomingRequests(userId: string) {
-  return prisma.friendRequest.findMany({
-    where: { toId: userId },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, from: { select: PROFILE } },
-  });
+  const rows = await prisma.$queryRaw<(FriendProfile & { requestId: string })[]>`
+    SELECT r."id" AS "requestId",
+           u."id", u."name", u."handle", u."avatarUrl", u."bio"
+      FROM "FriendRequest" r
+      JOIN "User" u ON u."id" = r."fromId"
+     WHERE r."toId" = ${userId}
+     ORDER BY r."createdAt" DESC
+  `;
+  return rows.map(({ requestId, ...from }) => ({ id: requestId, from }));
 }
 
 export async function getOutgoingRequests(userId: string) {
-  return prisma.friendRequest.findMany({
-    where: { fromId: userId },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, to: { select: PROFILE } },
-  });
+  const rows = await prisma.$queryRaw<(FriendProfile & { requestId: string })[]>`
+    SELECT r."id" AS "requestId",
+           u."id", u."name", u."handle", u."avatarUrl", u."bio"
+      FROM "FriendRequest" r
+      JOIN "User" u ON u."id" = r."toId"
+     WHERE r."fromId" = ${userId}
+     ORDER BY r."createdAt" DESC
+  `;
+  return rows.map(({ requestId, ...to }) => ({ id: requestId, to }));
 }
 
 /** Hoe jij tegenover iemand anders staat. */
@@ -199,7 +214,15 @@ export async function removeFriend(userId: string, otherId: string) {
  * De code achter je uitnodigingslink. We maken hem pas aan als je hem nodig
  * hebt, zodat bestaande accounts er niet zonder komen te zitten.
  */
-export async function getInviteCode(userId: string) {
+/**
+ * De code achter je uitnodigingslink, pas aangemaakt bij het eerste gebruik.
+ *
+ * Heb je hem al, geef hem dan mee (hij staat in de ingelogde gebruiker): dan
+ * hoeft de database er niet opnieuw naar gevraagd te worden.
+ */
+export async function getInviteCode(userId: string, bekend?: string | null) {
+  if (bekend) return bekend;
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { inviteCode: true },

@@ -48,6 +48,9 @@ export function SharePanel({
           <div className="mt-3">
             <Link
               href={`/p/${listId}`}
+              // Het voorbeeld bouwt de hele bezoekerskant op en wordt zelden
+              // geopend; dat hoeft niet alvast klaargezet te worden.
+              prefetch={false}
               className="btn btn-ghost btn-sm -ml-3"
             >
               {t("share.open")}

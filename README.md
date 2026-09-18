@@ -497,6 +497,44 @@ Wat je aanvinkt krijgt een eigen exemplaar, wat je uitvinkt raakt het zijne
 kwijt (`setGiftLists` in `lib/gifts.ts`). Alles uitvinken kan niet: nergens meer
 in staan is verwijderen, en dat hoort bij de prullenbak te blijven.
 
+## Navigeren: de volgende pagina staat al klaar
+
+Tussen tabbladen wisselen kostte seconden. De oorzaak zat niet in de pagina's
+zelf — die zijn klein — maar in wát er op het moment van tikken moest gebeuren:
+de hele ronde naar de server, inclusief het opstarten van de functie op Vercel
+en het opzoeken in een database die ergens anders draait.
+
+Next.js haalt een pagina normaal alvast op zodra de link in beeld komt, maar
+**voor een dynamische pagina doet hij dat alleen als er een `loading.js` naast
+staat** — en die kunnen we niet gebruiken (zie hieronder). Zonder die twee was
+er dus nergens iets klaargezet.
+
+De oplossing is `prefetch` op de links die ertoe doen: de navigatiebalk
+onderaan, de knoppen in de balk bovenaan, de kaartjes op het overzicht en de
+terugknoppen. Die pagina's worden op de achtergrond opgehaald terwijl je nog
+naar de huidige kijkt. Tikken kost daarna **geen enkel verzoek meer**; de
+pagina staat er meteen.
+
+Dat is gemeten en wordt bewaakt: `tests/e2e/snelheid.spec.ts` en de
+tegenhanger in `mobile.spec.ts` klikken door de app en controleren dat het
+adres waar je heen gaat niet alsnog opgehaald hoeft te worden.
+
+### Wat het kost
+
+Vooruit ophalen is echt werk: het overzicht met drie lijsten erop zet in de
+achtergrond ook die drie lijstpagina's klaar. Dat gebeurt nadat de pagina zelf
+staat, dus je merkt er niets van, maar het is wel serverwerk. Voor een app met
+een handvol lijsten per persoon is dat een goede ruil; groeit dat aantal naar
+tientallen, dan is dit de eerste plek om opnieuw naar te kijken.
+
+Wat klaargezet is, blijft ook even liggen — standaard vijf minuten. Dat is lang
+voor een lijst die je samen invult, dus in `next.config.ts` staat dat op één
+minuut. Je eigen wijzigingen komen daar niet door in de knel: elke serveractie
+roept `revalidatePath` aan en gooit het bewaarde exemplaar meteen weg. Daarom
+verversen de acties in `lib/actions/` sinds deze wijziging ook het overzicht en
+je profiel als het aantal cadeaus in een lijst verandert — die kaartjes tonen
+dat aantal, en zouden anders een minuut lang het oude getal laten zien.
+
 ## Snelheid: wachten hoort niet bij verschuiven
 
 Elke wijziging gaat naar de database, zodat iedereen die meedoet hetzelfde
@@ -520,21 +558,42 @@ mee. Overal stond daarachter nog een `router.refresh()`, en dat liet de server
 precies hetzelfde werk nog een keer doen — je wachtte dus dubbel. Die staan er
 nu niet meer.
 
-**Er werd te vaak naar de database gevraagd.** Een lijst openen kostte 19
-zoekopdrachten, nu acht:
+**Er werd te vaak naar de database gevraagd.** Wat elke pagina de server kost:
+
+| Pagina | Was | Nu |
+| --- | --- | --- |
+| Een lijst openen | 19 | 8 |
+| Tabblad Sociaal | 11 | 6 |
+| Overzicht | 7 | 4 |
+| Je profiel | 4 | 4 |
+| Een gedeelde lijst (`/l/<code>`) | 20 | 10 |
+| Een openbaar profiel (`/u/<handle>`) | 8 | 7 |
+
+Wat daarvoor is aangepast:
 
 | Wat | Was | Nu |
 | --- | --- | --- |
 | Wie ben ik? | 3× per pagina | 1× (`cache()` in `lib/auth.ts`) |
 | Wie doen er mee? | 7 | 1 (`getParticipants`) |
 | Je vrienden | 3 | 1 (`getFriends`) |
-| Uitnodigingen voor de lijst | 2 | 1 (`getListInvites`) |
+| Vriendschapsverzoeken | 2 per blok | 1 per blok |
+| Uitnodigingen voor een lijst | 2 en 3 | 1 en 1 |
+| De code van je uitnodigingslink | een eigen vraag | staat in de ingelogde gebruiker |
 | Volgorde opslaan | 1 per cadeau, in een transactie | 1 (`UNNEST`) |
 | De lijstnamen in de panelen | de volledige lijsten | alleen `id` en `titel` |
+| De titel in de titelbalk | de hele lijst, twee keer | één kleine vraag |
 
-Prisma vroeg bij lege relaties nog netjes naar `WHERE id IN (NULL)`: had je
-geen vrienden en geen uitnodigingen, dan kostte dat alsnog drie ritjes naar de
-database. Vandaar de handgeschreven zoekopdrachten voor die drie.
+Twee dingen zaten hierachter. Prisma vraagt bij een relatie de tweede tabel
+apart op — en zelfs als er niets te halen valt: had je geen vrienden en geen
+uitnodigingen, dan stuurde hij alsnog `WHERE id IN (NULL)`. Vandaar de
+handgeschreven zoekopdrachten op die plekken.
+
+En `generateMetadata` is een eigen rendering, náást de pagina. Stond daar
+`getListForVisitor()` in, dan werd de hele lijst met eigenaar, deelnemers,
+cadeaus én claims twee keer opgehaald, voor één regel in de titelbalk. Die
+functies hebben nu een kleine eigen variant (`getVisitorListTitle`,
+`getProfileName`) die alleen de naam ophaalt — en voor een privélijst of een
+vriendenlijst net zo goed niets teruggeeft.
 
 Op een database die naast de app draait scheelt elk ritje maar een paar
 milliseconden. Op Vercel, met de database ergens anders, is het het verschil
@@ -624,7 +683,10 @@ van een formulier niet achter de balk valt.
 `tests/e2e/snelheid.spec.ts` bewaakt dat verschuiven en weggooien meteen te
 zien zijn: er wordt drie keer achter elkaar op hetzelfde pijltje geklikt zonder
 tussendoor te wachten, en de nieuwe volgorde moet binnen twee seconden op het
-scherm staan én na een herlaadbeurt nog kloppen.
+scherm staan én na een herlaadbeurt nog kloppen. Hetzelfde bestand controleert
+dat het vooruit ophalen werkt — klikken op een tabblad of een lijst mag die
+pagina niet alsnog bij de server hoeven halen; `mobile.spec.ts` doet dat nog
+eens voor de balk onderaan.
 
 De bewaarknop wordt echt uitgevoerd in de e2e-test: er wordt een nagemaakte
 webshoppagina geserveerd, de bookmarklet-code draait daarop, en we controleren

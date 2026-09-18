@@ -28,7 +28,7 @@ export default async function FriendsPage() {
       getIncomingRequests(user.id),
       getOutgoingRequests(user.id),
       getListInvitesFor(user.id),
-      getInviteCode(user.id),
+      getInviteCode(user.id, user.inviteCode),
       getTranslator(),
     ]);
 

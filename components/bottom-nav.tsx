@@ -133,6 +133,7 @@ export function BottomNav() {
       <div className="flex flex-1 justify-around">
         <Link
           href="/dashboard"
+          prefetch
           className="tabbar-item"
           aria-current={onLists ? "page" : undefined}
         >
@@ -142,6 +143,7 @@ export function BottomNav() {
 
         <Link
           href="/friends"
+          prefetch
           className="tabbar-item"
           aria-current={onSocial ? "page" : undefined}
         >
@@ -165,6 +167,7 @@ export function BottomNav() {
       <div className="flex flex-1 justify-around">
         <Link
           href="/account"
+          prefetch
           className="tabbar-item max-w-24"
           aria-current={onAccount ? "page" : undefined}
         >

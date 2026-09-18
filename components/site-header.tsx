@@ -40,13 +40,13 @@ export async function SiteHeader() {
 
         {user ? (
           <>
-            <Link href="/dashboard" className="btn btn-ghost btn-sm hidden md:inline-flex">
+            <Link href="/dashboard" prefetch className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.dashboard")}
             </Link>
-            <Link href="/friends" className="btn btn-ghost btn-sm hidden md:inline-flex">
+            <Link href="/friends" prefetch className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.social")}
             </Link>
-            <Link href="/account" className="btn btn-ghost btn-sm hidden md:inline-flex">
+            <Link href="/account" prefetch className="btn btn-ghost btn-sm hidden md:inline-flex">
               {t("nav.account")}
             </Link>
             <form action={logoutAction} className="hidden md:block">

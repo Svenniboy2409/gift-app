@@ -139,23 +139,49 @@ export async function getListInvites(listId: string) {
   `;
 }
 
+/**
+ * De lijsten waarvoor jij bent gevraagd. Ook dit in één zoekopdracht: via de
+ * relaties werden het er drie — de uitnodigingen, de lijsten erbij en de
+ * eigenaren erbij.
+ */
 export async function getListInvitesFor(userId: string) {
-  return prisma.listInvite.findMany({
-    where: { toId: userId },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      list: {
-        select: {
-          id: true,
-          title: true,
-          coverColor: true,
-          occasion: true,
-          user: { select: { name: true, handle: true, avatarUrl: true } },
-        },
+  const rows = await prisma.$queryRaw<
+    {
+      id: string;
+      listId: string;
+      title: string;
+      coverColor: string;
+      occasion: string;
+      ownerName: string;
+      ownerHandle: string;
+      ownerAvatarUrl: string | null;
+    }[]
+  >`
+    SELECT i."id",
+           l."id" AS "listId", l."title", l."coverColor", l."occasion"::text,
+           u."name" AS "ownerName", u."handle" AS "ownerHandle",
+           u."avatarUrl" AS "ownerAvatarUrl"
+      FROM "ListInvite" i
+      JOIN "List" l ON l."id" = i."listId"
+      JOIN "User" u ON u."id" = l."userId"
+     WHERE i."toId" = ${userId}
+     ORDER BY i."createdAt" DESC
+  `;
+
+  return rows.map((row) => ({
+    id: row.id,
+    list: {
+      id: row.listId,
+      title: row.title,
+      coverColor: row.coverColor,
+      occasion: row.occasion,
+      user: {
+        name: row.ownerName,
+        handle: row.ownerHandle,
+        avatarUrl: row.ownerAvatarUrl,
       },
     },
-  });
+  }));
 }
 
 /** Meedoen. Geeft terug of het gelukt is, en zo niet waarom. */
