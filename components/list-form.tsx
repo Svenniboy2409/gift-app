@@ -162,7 +162,9 @@ export function ListForm({
       <div>
         <span className="label">{t("list.field.coverColor")}</span>
         <input type="hidden" name="coverColor" value={color} />
-        <div className="flex flex-wrap gap-2 sm:gap-2.5">
+        {/* Zes per rij, zodat twaalf kleuren twee nette rijen vormen in plaats
+            van een rafelige afbreking. */}
+        <div className="grid grid-cols-6 justify-items-center gap-2 sm:gap-2.5">
           {COVER_COLORS.map((option) => (
             <button
               key={option}

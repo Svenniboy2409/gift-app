@@ -6,13 +6,23 @@
  * `server-only` importeren.
  */
 
+/**
+ * De volgorde is die van het kleurenwiel, met terracotta — de kleur van de app
+ * zelf — vooraan en het enige neutraal achteraan.
+ */
 export const COVER_COLORS = [
   "terracotta",
-  "olive",
-  "plum",
-  "ocean",
   "amber",
+  "olive",
+  "forest",
+  "teal",
+  "ocean",
+  "midnight",
+  "lavender",
+  "plum",
   "rose",
+  "cherry",
+  "sand",
 ] as const;
 
 export type CoverColor = (typeof COVER_COLORS)[number];

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createList, openManualGiftForm, register } from "./helpers";
+import { COVER_COLORS } from "@/lib/covers";
 
 /**
  * De kleur van de omslag kleurt de hele lijst mee.
@@ -10,7 +11,11 @@ import { createList, openManualGiftForm, register } from "./helpers";
  * terechtkomen.
  */
 
-const KLEUREN = ["terracotta", "olive", "plum", "ocean", "amber", "rose"];
+/**
+ * Rechtstreeks uit de app, niet overgetypt: komt er een kleur bij, dan wordt
+ * die hier vanzelf meegenomen.
+ */
+const KLEUREN = COVER_COLORS;
 
 /** De vier variabelen zoals de browser ze uitrekent voor één klasse. */
 async function accentVan(page: Page, klasse: string) {
@@ -45,6 +50,78 @@ test("elke omslagkleur heeft een eigen, volledig accent", async ({ page }) => {
   }
   // En ze verschillen echt van elkaar.
   expect(gezien.size).toBe(KLEUREN.length);
+});
+
+test("elke omslagkleur heeft ook een verloop voor de banner", async ({
+  page,
+}) => {
+  await register(page, "Bannerman", "banner");
+
+  const verlopen = await page.evaluate((kleuren) => {
+    const gevonden: Record<string, string> = {};
+    for (const naam of kleuren) {
+      const proef = document.createElement("div");
+      proef.className = `cover-${naam}`;
+      document.body.append(proef);
+      gevonden[naam] = getComputedStyle(proef).backgroundImage;
+      proef.remove();
+    }
+    return gevonden;
+  }, [...KLEUREN]);
+
+  // Zonder verloop krijg je een doorzichtige banner met witte tekst erop.
+  for (const [naam, verloop] of Object.entries(verlopen)) {
+    expect(verloop, `${naam} mist zijn verloop`).toContain("gradient");
+  }
+  expect(new Set(Object.values(verlopen)).size).toBe(KLEUREN.length);
+});
+
+test("elke omslagkleur heeft een naam in beide talen", async ({ page }) => {
+  await register(page, "Namer", "naam");
+  await createList(page, "Naamlijst");
+
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.waitForTimeout(300);
+
+  // De knopjes heten naar hun kleur; een ontbrekende vertaling laat de sleutel
+  // zelf staan ("color.sand") en dat is meteen te zien.
+  async function namen() {
+    return page
+      .locator("[aria-pressed]")
+      .evaluateAll((knoppen) =>
+        knoppen
+          .map((knop) => knop.getAttribute("title") ?? "")
+          .filter((naam) => naam !== ""),
+      );
+  }
+
+  async function controleer(taal: string) {
+    const gevonden = await namen();
+    expect(gevonden, taal).toHaveLength(KLEUREN.length);
+    for (const naam of gevonden) {
+      expect(naam, `${taal}: ${naam}`).not.toContain("color.");
+    }
+    return gevonden;
+  }
+
+  const nederlands = await controleer("nl");
+
+  // En hetzelfde in het Engels. Eerst het paneel dicht: de taalknop staat in
+  // de balk erachter en is anders niet aan te klikken.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "en", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "List settings" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "List settings" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.waitForTimeout(300);
+  const engels = await controleer("en");
+
+  // Het zijn ook echt vertalingen en niet twee keer dezelfde lijst.
+  expect(engels).not.toEqual(nederlands);
 });
 
 test("de lijst neemt de kleur van zijn omslag over", async ({ page }) => {

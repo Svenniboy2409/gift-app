@@ -24,8 +24,8 @@ maar de eigenaar van de lijst ziet dat nooit.
   als het uitlezen mislukt kun je het cadeau gewoon handmatig invullen.
 - **Lijsten per gelegenheid** met datum, aftellen, omslagkleur en
   zichtbaarheid (privé / alleen vrienden / iedereen met de link / ook op je
-  profiel). De omslagkleur kleurt de hele lijst mee: kies je blauw, dan worden
-  de deelknop, de opslaanknop en de prijzen ook blauw.
+  profiel). Twaalf omslagkleuren, en die kleuren de hele lijst mee: kies je
+  blauw, dan worden de deelknop, de opslaanknop en de prijzen ook blauw.
 - **Cadeau-details:** hoe graag je iets wilt op een schuif van vijf sterren,
   gewenst aantal en een notitie voor maat, kleur of variant.
 - **Claimen zonder account.** Een bezoeker vult alleen een naam in. Bij meerdere
@@ -642,6 +642,21 @@ vier variabelen haalde: `--accent`, `--accent-hover`, `--accent-soft` en
 die vier opnieuw zet, en `accentClass()` uit `lib/covers.ts` plakt hem op het
 buitenste vak van alles wat bij die ene lijst hoort. De rest erft mee.
 
+Er zijn twaalf kleuren, in de volgorde van het kleurenwiel met terracotta — de
+kleur van de app zelf — vooraan en het enige neutraal achteraan:
+
+| | | |
+| --- | --- | --- |
+| Terracotta | Amber | Olijf |
+| Dennengroen | Zeegroen | Oceaan |
+| Middernacht | Lavendel | Pruim |
+| Roze | Kersrood | Zand |
+
+Kersrood en dennengroen zijn er voor kerst en Sinterklaas, middernacht voor een
+bruiloft, lavendel voor een kraamcadeau, zeegroen omdat er tussen groen en blauw
+niets stond, en zand voor wie het liever rustig houdt. Twaalf past precies in
+twee rijen van zes in de kiezer.
+
 Waar hij op staat:
 
 | Plek | Waarom |
@@ -665,9 +680,13 @@ eronder). Terracotta is de uitzondering en staat er precies zoals hij altijd
 was — dat is de kleur van de app zelf, en die wilden we niet stilletjes
 verschuiven.
 
-`tests/e2e/kleuren.spec.ts` bewaakt dat elke kleur alle vier de variabelen zet
-en dat ze echt van elkaar verschillen: één vergeten regel en je houdt de kleur
-van de vorige lijst over zonder dat iets stukgaat.
+`tests/e2e/kleuren.spec.ts` loopt de lijst uit `lib/covers.ts` zelf af, dus een
+nieuwe kleur wordt vanzelf meegenomen. Per kleur wordt gecontroleerd dat alle
+vier de accentvariabelen gezet zijn, dat er een verloop voor de banner is, en
+dat er een naam in het Nederlands én het Engels bij staat. Alle drie de
+vergissingen zijn stil: je houdt de kleur van de vorige lijst over, of je krijgt
+een doorzichtige banner, of er staat letterlijk "color.sand" in het
+tooltipje — zonder dat er iets stukgaat.
 
 ## Opmaak: gemaakt voor de telefoon
 
