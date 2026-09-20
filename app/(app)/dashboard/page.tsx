@@ -71,6 +71,7 @@ export default async function DashboardPage() {
                 title: list.title,
                 description: list.description,
                 occasion: list.occasion,
+                occasionNote: list.occasionNote,
                 eventDate: list.eventDate,
                 coverColor: list.coverColor,
                 shareCode: list.shareCode,

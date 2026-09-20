@@ -47,7 +47,7 @@ export default async function InvitePage({
           </h1>
           <p className="mt-1 text-sm font-medium text-subtle">@{person.handle}</p>
           {person.bio && (
-            <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+            <p className="mt-3 max-w-sm whitespace-pre-line text-sm leading-relaxed text-muted">
               {person.bio}
             </p>
           )}

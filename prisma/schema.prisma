@@ -126,6 +126,9 @@ model List {
   title         String
   description   String?
   occasion      Occasion   @default(OTHER)
+  /// Bij gelegenheid "Anders" mag je zelf zeggen wat het is ("Jubileum",
+  /// "Nieuwe baan"). Leeg gelaten, dan staat er gewoon "Anders".
+  occasionNote  String?
   eventDate     DateTime?
   coverColor    String     @default("terracotta")
   coverImageUrl String?

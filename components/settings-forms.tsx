@@ -14,6 +14,7 @@ import { Avatar } from "@/components/avatar";
 import { ImageCropper } from "@/components/image-cropper";
 import { LOCALES, type MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/client";
+import { Field, TextArea } from "@/components/field";
 import { normalizeHandle } from "@/lib/validation";
 
 function SubmitButton({ label }: { label: string }) {
@@ -175,10 +176,9 @@ export function ProfileForm({
         <label className="label" htmlFor="settings-name">
           {t("auth.name")}
         </label>
-        <input
+        <Field
           id="settings-name"
           name="name"
-          className="field"
           defaultValue={name}
           required
           minLength={2}
@@ -189,10 +189,9 @@ export function ProfileForm({
         <label className="label" htmlFor="settings-handle">
           {t("settings.handle")}
         </label>
-        <input
+        <Field
           id="settings-handle"
           name="handle"
-          className="field"
           value={handleValue}
           onChange={(event) =>
             setHandleValue(normalizeHandle(event.target.value))
@@ -211,7 +210,7 @@ export function ProfileForm({
           {t("settings.bio")}{" "}
           <span className="font-normal text-subtle">({t("common.optional")})</span>
         </label>
-        <textarea
+        <TextArea
           id="settings-bio"
           name="bio"
           className="field min-h-20 resize-y"

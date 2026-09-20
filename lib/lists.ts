@@ -23,6 +23,8 @@ export type ListInput = {
   title: string;
   description?: string | null;
   occasion?: Occasion;
+  /** Bij "Anders": wat de gelegenheid dan wél is. */
+  occasionNote?: string | null;
   eventDate?: Date | null;
   coverColor?: string;
   visibility?: Visibility;
@@ -41,6 +43,7 @@ export async function createList(userId: string, input: ListInput) {
       title: input.title,
       description: input.description ?? null,
       occasion: input.occasion ?? "OTHER",
+      occasionNote: input.occasionNote || null,
       eventDate: input.eventDate ?? null,
       coverColor: input.coverColor ?? "terracotta",
       visibility: input.visibility ?? "LINK",
@@ -61,6 +64,7 @@ export async function updateList(
       title: input.title,
       description: input.description ?? null,
       occasion: input.occasion,
+      occasionNote: input.occasionNote || null,
       eventDate: input.eventDate ?? null,
       coverColor: input.coverColor,
       visibility: input.visibility,
@@ -102,6 +106,7 @@ export async function getListsForOwner(userId: string) {
       title: true,
       description: true,
       occasion: true,
+      occasionNote: true,
       eventDate: true,
       coverColor: true,
       visibility: true,
@@ -182,6 +187,7 @@ export async function getPublicProfile(
       title: true,
       description: true,
       occasion: true,
+      occasionNote: true,
       eventDate: true,
       coverColor: true,
       shareCode: true,

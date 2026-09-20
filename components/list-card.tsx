@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { accentClass } from "@/lib/covers";
+import { occasionLabel } from "@/lib/occasions";
 import { daysUntil, formatDate, type Locale, type Translator } from "@/lib/i18n";
 
 export type ListCardData = {
@@ -7,6 +8,8 @@ export type ListCardData = {
   title: string;
   description: string | null;
   occasion: string;
+  /** Bij de gelegenheid "Anders": wat het dan wél is. */
+  occasionNote: string | null;
   eventDate: Date | null;
   coverColor: string;
   shareCode: string;
@@ -60,7 +63,7 @@ export function ListCard({
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
         <span className="absolute left-4 top-4 rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d] backdrop-blur-sm">
-          {t(`occasion.${list.occasion}` as "occasion.OTHER")}
+          {occasionLabel(list, t)}
         </span>
         {(list.visibility === "PRIVATE" || list.visibility === "FRIENDS") && (
           <span className="absolute right-4 top-4 rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d] backdrop-blur-sm">
@@ -78,7 +81,7 @@ export function ListCard({
           {list.title}
         </h2>
         {list.description && (
-          <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted">
+          <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-sm leading-relaxed text-muted">
             {list.description}
           </p>
         )}

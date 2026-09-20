@@ -330,6 +330,25 @@ summary,
     }
   }
 
+  /*
+    Een datumveld op iOS brengt zijn eigen, bredere maat mee en trekt de balk
+    daarmee verder door dan alle andere. `appearance: none` haalt die native
+    maatvoering eraf; de vormgeving hierboven blijft gewoon staan, en tikken
+    opent nog steeds de datumkiezer.
+  */
+  .field[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+  }
+
+  /* Chrome tekent zijn kalendericoon binnen de tekst; met `appearance: none`
+     verdwijnt het, dus dat zetten we terug. */
+  .field[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+
   .field::placeholder {
     color: var(--text-subtle);
   }

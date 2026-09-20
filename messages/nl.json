@@ -17,6 +17,10 @@
   "social.remove": "Verwijderen",
   "social.invite": "Uitnodigen",
   "social.alreadyFriends": "Jullie zijn vrienden",
+  "friend.add": "Vriendschapsverzoek sturen naar {name}",
+  "friend.confirm": "Een vriendschapsverzoek sturen naar {name}?",
+  "friend.needLogin": "Je moet ingelogd zijn om vrienden te worden met anderen. Wil je nu inloggen?",
+  "visitor.toProfile": "Naar het profiel van {name}",
   "social.find": "Iemand zoeken",
   "social.findBody": "Zoek op profielnaam of naam en stuur een uitnodiging.",
   "social.findPlaceholder": "Bijv. sven",
@@ -136,6 +140,8 @@
   "list.field.description": "Omschrijving",
   "list.field.descriptionPlaceholder": "Iets wat je bezoekers wil meegeven (optioneel)",
   "list.field.occasion": "Gelegenheid",
+  "list.field.occasionNote": "Welke gelegenheid?",
+  "list.field.occasionNotePlaceholder": "Bijv. jubileum of nieuwe baan",
   "list.field.eventDate": "Datum",
   "list.field.coverColor": "Kleur",
   "list.field.visibility": "Wie kan de lijst zien?",
@@ -304,6 +310,7 @@
   "common.save": "Opslaan",
   "common.loading": "Bezig…",
   "common.close": "Sluiten",
+  "common.clear": "Leegmaken",
   "common.optional": "optioneel",
   "footer.made": "Gemaakt om cadeaus geven makkelijker te maken."
 }

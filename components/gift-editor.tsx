@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { uploadErrorKey } from "@/lib/upload-errors";
 import { ImageCropper } from "@/components/image-cropper";
 import { StarSlider } from "@/components/star-slider";
+import { Field, TextArea } from "@/components/field";
 import type { MessageKey } from "@/lib/i18n";
 
 export type GiftDraft = {
@@ -283,11 +284,10 @@ export function GiftEditor({
             <label className="label" htmlFor="gift-title">
               {t("gift.field.title")}
             </label>
-            <input
+            <Field
               ref={titleInput}
               id="gift-title"
               name="title"
-              className="field"
               defaultValue={draft.title}
               required
               maxLength={160}
@@ -303,14 +303,15 @@ export function GiftEditor({
                 </span>
               </label>
               <div className="flex gap-2">
-                <input
-                  id="gift-price"
-                  name="price"
-                  className="field"
-                  defaultValue={draft.price}
-                  inputMode="decimal"
-                  placeholder="0,00"
-                />
+                <div className="min-w-0 flex-1">
+                  <Field
+                    id="gift-price"
+                    name="price"
+                    defaultValue={draft.price}
+                    inputMode="decimal"
+                    placeholder="0,00"
+                  />
+                </div>
                 <select
                   name="currency"
                   className="field w-24 shrink-0"
@@ -347,11 +348,10 @@ export function GiftEditor({
               {t("gift.field.url")}{" "}
               <span className="font-normal text-subtle">({t("common.optional")})</span>
             </label>
-            <input
+            <Field
               id="gift-url"
               name="url"
               type="url"
-              className="field"
               defaultValue={draft.url}
               placeholder="https://"
             />
@@ -363,10 +363,9 @@ export function GiftEditor({
               {t("gift.field.note")}{" "}
               <span className="font-normal text-subtle">({t("common.optional")})</span>
             </label>
-            <input
+            <Field
               id="gift-note"
               name="note"
-              className="field"
               defaultValue={draft.note}
               placeholder={t("gift.field.notePlaceholder")}
               maxLength={300}
@@ -383,7 +382,7 @@ export function GiftEditor({
               {t("gift.field.description")}{" "}
               <span className="font-normal text-subtle">({t("common.optional")})</span>
             </label>
-            <textarea
+            <TextArea
               id="gift-description"
               name="description"
               className="field min-h-16 resize-y"

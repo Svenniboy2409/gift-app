@@ -6,7 +6,7 @@ import { getTranslator } from "@/lib/i18n/server";
 import { PlainHeader, SiteFooter } from "@/components/site-header";
 import { relationTo } from "@/lib/friends";
 import { Avatar } from "@/components/avatar";
-import { FriendButton } from "@/components/people";
+import { FriendIcon } from "@/components/friend-icon";
 import { ListCard } from "@/components/list-card";
 
 export async function generateMetadata({
@@ -55,13 +55,20 @@ export default async function ProfilePage({
           </h1>
           <p className="mt-1 text-sm font-medium text-subtle">@{profile.handle}</p>
           {profile.bio && (
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted sm:text-base">
+            <p className="mt-3 max-w-md whitespace-pre-line text-sm leading-relaxed text-muted sm:text-base">
               {profile.bio}
             </p>
           )}
-          {relation && relation !== "self" && (
+          {/* Het vriendschapsknopje staat er ook als je niet bent ingelogd; het
+              legt dan uit dat je daarvoor eerst moet inloggen. */}
+          {relation !== "self" && (
             <div className="mt-4">
-              <FriendButton userId={profile.id} relation={relation} />
+              <FriendIcon
+                userId={profile.id}
+                name={profile.name}
+                handle={profile.handle}
+                relation={relation}
+              />
             </div>
           )}
         </div>
@@ -82,6 +89,7 @@ export default async function ProfilePage({
                   title: list.title,
                   description: list.description,
                   occasion: list.occasion,
+                  occasionNote: list.occasionNote,
                   eventDate: list.eventDate,
                   coverColor: list.coverColor,
                   shareCode: list.shareCode,

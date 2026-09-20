@@ -162,9 +162,11 @@ export function VisitorGiftCard({
       <div className="flex flex-1 flex-col p-4">
         <h3 className="font-semibold leading-snug text-ink">{gift.title}</h3>
 
-        {gift.note && <p className="mt-1 text-sm text-muted">{gift.note}</p>}
+        {gift.note && (
+          <p className="mt-1 whitespace-pre-line text-sm text-muted">{gift.note}</p>
+        )}
         {gift.description && (
-          <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-subtle">
+          <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm leading-relaxed text-subtle">
             {gift.description}
           </p>
         )}

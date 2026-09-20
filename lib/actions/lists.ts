@@ -29,6 +29,7 @@ function readListForm(formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description") ?? "",
     occasion: formData.get("occasion") ?? "OTHER",
+    occasionNote: formData.get("occasionNote") ?? "",
     eventDate: formData.get("eventDate") ?? "",
     coverColor: formData.get("coverColor") ?? "terracotta",
     visibility: formData.get("visibility") ?? "LINK",
@@ -55,6 +56,7 @@ export async function createListAction(
     title: parsed.data.title,
     description: parsed.data.description || null,
     occasion: parsed.data.occasion,
+    occasionNote: parsed.data.occasionNote,
     eventDate: toDate(parsed.data.eventDate),
     coverColor: isCoverColor(parsed.data.coverColor)
       ? parsed.data.coverColor
@@ -81,6 +83,7 @@ export async function updateListAction(
     title: parsed.data.title,
     description: parsed.data.description || null,
     occasion: parsed.data.occasion,
+    occasionNote: parsed.data.occasionNote,
     eventDate: toDate(parsed.data.eventDate),
     coverColor: isCoverColor(parsed.data.coverColor)
       ? parsed.data.coverColor

@@ -10,6 +10,7 @@ import {
   sendRequestAction,
 } from "@/lib/actions/friends";
 import { useI18n } from "@/lib/i18n/client";
+import { Field } from "@/components/field";
 import { useOrigin } from "@/lib/hooks";
 import type { FriendProfile, Relation } from "@/lib/friends";
 import { Avatar } from "@/components/avatar";
@@ -242,13 +243,14 @@ export function PeopleSearch() {
       <p className="mt-1 text-sm text-muted">{t("social.findBody")}</p>
 
       <form onSubmit={search} className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="field"
-          placeholder={t("social.findPlaceholder")}
-          aria-label={t("social.find")}
-        />
+        <div className="min-w-0 flex-1">
+          <Field
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={t("social.findPlaceholder")}
+            aria-label={t("social.find")}
+          />
+        </div>
         <button
           type="submit"
           className="btn btn-secondary shrink-0"

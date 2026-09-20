@@ -7,11 +7,14 @@ import { useI18n } from "@/lib/i18n/client";
 import type { MessageKey } from "@/lib/i18n";
 import { OCCASIONS, VISIBILITIES } from "@/lib/validation";
 import { COVER_COLORS, accentClass } from "@/lib/covers";
+import { Field, TextArea } from "@/components/field";
 
 export type ListFormValues = {
   title: string;
   description: string;
   occasion: string;
+  /** Bij "Anders": wat de gelegenheid dan wél is. */
+  occasionNote: string;
   eventDate: string;
   coverColor: string;
   visibility: string;
@@ -82,6 +85,7 @@ export function ListForm({
   const { t } = useI18n();
   const [state, formAction] = useActionState<FormState, FormData>(action, {});
   const { baken, zweeft } = useZweeft();
+  const [occasion, setOccasion] = useState(initial.occasion);
   const [color, setColor] = useState(initial.coverColor);
   const [visibility, setVisibility] = useState(initial.visibility);
 
@@ -97,10 +101,9 @@ export function ListForm({
         <label className="label" htmlFor="title">
           {t("list.field.title")}
         </label>
-        <input
+        <Field
           id="title"
           name="title"
-          className="field"
           defaultValue={initial.title}
           placeholder={t("list.field.titlePlaceholder")}
           required
@@ -113,7 +116,7 @@ export function ListForm({
           {t("list.field.description")}{" "}
           <span className="font-normal text-subtle">({t("common.optional")})</span>
         </label>
-        <textarea
+        <TextArea
           id="description"
           name="description"
           className="field min-h-20 resize-y"
@@ -134,14 +137,32 @@ export function ListForm({
             id="occasion"
             name="occasion"
             className="field"
-            defaultValue={initial.occasion}
+            value={occasion}
+            onChange={(event) => setOccasion(event.target.value)}
           >
-            {OCCASIONS.map((occasion) => (
-              <option key={occasion} value={occasion}>
-                {t(`occasion.${occasion}` as MessageKey)}
+            {OCCASIONS.map((optie) => (
+              <option key={optie} value={optie}>
+                {t(`occasion.${optie}` as MessageKey)}
               </option>
             ))}
           </select>
+
+          {/* Bij "Anders" mag je zelf zeggen waar de lijst voor is. Laat je
+              het leeg, dan blijft er gewoon "Anders" staan. */}
+          {occasion === "OTHER" && (
+            <div className="mt-2">
+              <label className="sr-only" htmlFor="occasionNote">
+                {t("list.field.occasionNote")}
+              </label>
+              <Field
+                id="occasionNote"
+                name="occasionNote"
+                defaultValue={initial.occasionNote}
+                placeholder={t("list.field.occasionNotePlaceholder")}
+                maxLength={40}
+              />
+            </div>
+          )}
         </div>
 
         <div className="min-w-0">
@@ -149,15 +170,15 @@ export function ListForm({
             {t("list.field.eventDate")}{" "}
             <span className="font-normal text-subtle">({t("common.optional")})</span>
           </label>
-          <input
+          <Field
             id="eventDate"
             name="eventDate"
             type="date"
-            className="field"
             defaultValue={initial.eventDate}
           />
         </div>
       </div>
+
 
       <div>
         <span className="label">{t("list.field.coverColor")}</span>

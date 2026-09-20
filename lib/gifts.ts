@@ -75,6 +75,7 @@ export async function getListForOwner(userId: string, listId: string) {
       title: true,
       description: true,
       occasion: true,
+      occasionNote: true,
       eventDate: true,
       coverColor: true,
       visibility: true,
@@ -112,6 +113,7 @@ export type VisitorList = {
   title: string;
   description: string | null;
   occasion: string;
+  occasionNote: string | null;
   eventDate: Date | null;
   coverColor: string;
   shareCode: string;
@@ -164,6 +166,7 @@ export async function getListForVisitor(
       title: true,
       description: true,
       occasion: true,
+      occasionNote: true,
       eventDate: true,
       coverColor: true,
       shareCode: true,
@@ -205,6 +208,7 @@ export async function getListForVisitor(
     title: list.title,
     description: list.description,
     occasion: list.occasion,
+    occasionNote: list.occasionNote,
     eventDate: list.eventDate,
     coverColor: list.coverColor,
     shareCode: list.shareCode,

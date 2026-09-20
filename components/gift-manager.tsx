@@ -165,7 +165,7 @@ function GiftRow({
         <h3 className="font-semibold leading-snug text-ink">{gift.title}</h3>
 
         {gift.note && (
-          <p className="mt-0.5 text-sm text-muted">{gift.note}</p>
+          <p className="mt-0.5 whitespace-pre-line text-sm text-muted">{gift.note}</p>
         )}
 
         <div className="mt-2 flex flex-wrap items-center gap-1.5">

@@ -13,6 +13,7 @@ import {
 } from "@/lib/collab";
 import { getFriends } from "@/lib/friends";
 import { accentPage } from "@/lib/covers";
+import { occasionLabel } from "@/lib/occasions";
 import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
@@ -111,6 +112,7 @@ export default async function ListPage({
               title: list.title,
               description: list.description ?? "",
               occasion: list.occasion,
+              occasionNote: list.occasionNote ?? "",
               eventDate: list.eventDate
                 ? list.eventDate.toISOString().slice(0, 10)
                 : "",
@@ -143,13 +145,13 @@ export default async function ListPage({
           </ListSettings>
           <div className="relative">
             <span className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d]">
-              {t(`occasion.${list.occasion}` as "occasion.OTHER")}
+              {occasionLabel(list, t)}
             </span>
             <h1 className="mt-3 text-2xl font-bold tracking-tight text-white drop-shadow-sm sm:text-4xl">
               {list.title}
             </h1>
             {list.description && (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/90 sm:text-base">
+              <p className="mt-2 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-white/90 sm:text-base">
                 {list.description}
               </p>
             )}

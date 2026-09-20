@@ -27,6 +27,7 @@ export default async function NewListPage() {
             title: "",
             description: "",
             occasion: "OTHER",
+            occasionNote: "",
             eventDate: "",
             coverColor: "terracotta",
             visibility: "LINK",

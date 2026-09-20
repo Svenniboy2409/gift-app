@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/gifts";
 import { createListAction } from "@/lib/actions/lists";
 import { useI18n } from "@/lib/i18n/client";
+import { Field } from "@/components/field";
 import {
   EMPTY_DRAFT,
   GiftEditor,
@@ -194,7 +195,7 @@ function PasteBar({
               />
             </svg>
           </span>
-          <input
+          <Field
             id="paste-url"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
@@ -419,6 +420,7 @@ function NewListSheet({
             title: "",
             description: "",
             occasion: "OTHER",
+            occasionNote: "",
             eventDate: "",
             coverColor: "terracotta",
             visibility: "LINK",

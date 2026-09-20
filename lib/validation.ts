@@ -48,6 +48,8 @@ export const listSchema = z.object({
   title: z.string().trim().min(1, "required").max(80),
   description: z.string().trim().max(500).optional().or(z.literal("")),
   occasion: z.enum(OCCASIONS).default("OTHER"),
+  /** Alleen zinvol bij "OTHER"; kort, want hij komt in een klein label. */
+  occasionNote: z.string().trim().max(40).optional().or(z.literal("")),
   eventDate: z.string().optional().or(z.literal("")),
   coverColor: z.string().default("terracotta"),
   visibility: z.enum(VISIBILITIES).default("LINK"),

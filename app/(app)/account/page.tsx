@@ -41,6 +41,7 @@ export default async function AccountPage() {
     title: list.title,
     description: list.description,
     occasion: list.occasion,
+    occasionNote: list.occasionNote,
     eventDate: list.eventDate,
     coverColor: list.coverColor,
     shareCode: list.shareCode,
@@ -83,7 +84,7 @@ export default async function AccountPage() {
         </h1>
         <ProfileLink handle={user.handle} />
         {user.bio && (
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
+          <p className="mt-3 max-w-md whitespace-pre-line text-sm leading-relaxed text-muted">
             {user.bio}
           </p>
         )}

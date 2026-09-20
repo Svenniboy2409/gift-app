@@ -64,7 +64,7 @@ test("van link plakken tot claimen, zonder de verrassing te verklappen", async (
   await owner
     .getByLabel("Omschrijving")
     .fill("Alles wat ik leuk vind dit jaar.");
-  await owner.getByLabel("Gelegenheid").selectOption("BIRTHDAY");
+  await owner.getByLabel("Gelegenheid", { exact: true }).selectOption("BIRTHDAY");
   await owner.getByRole("button", { name: "Lijst maken" }).click();
 
   await expect(owner).toHaveURL(/\/lists\/[a-z0-9]+$/);

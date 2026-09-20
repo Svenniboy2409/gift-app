@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { VisitorList } from "@/lib/gifts";
 import { getTranslator } from "@/lib/i18n/server";
 import { daysUntil, formatDate } from "@/lib/i18n";
+import { occasionLabel } from "@/lib/occasions";
 import { VisitorGiftCard } from "@/components/visitor-gift-card";
 
 /**
@@ -42,9 +44,32 @@ export async function VisitorListView({
         className={`cover-${list.coverColor} relative overflow-hidden rounded-2xl p-5 sm:p-10`}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
-        <div className="relative">
+
+        {/* Naar het profiel van degene van wie de lijst is: daar staan zijn
+            andere lijsten, en kun je vrienden worden. Dezelfde plek als waar
+            de eigenaar zelf het tandwiel heeft. */}
+        <Link
+          href={`/u/${list.ownerHandle}`}
+          aria-label={t("visitor.toProfile", { name: list.ownerName })}
+          title={t("visitor.toProfile", { name: list.ownerName })}
+          className="absolute right-3 top-3 z-10 flex size-10 items-center justify-center rounded-full bg-white/85 text-[#2a231d] backdrop-blur-sm transition-transform active:scale-95"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="size-5"
+          >
+            <circle cx="12" cy="8" r="3.5" />
+            <path strokeLinecap="round" d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+          </svg>
+        </Link>
+
+        {/* Ruimte rechts, zodat een lange titel niet onder dat knopje loopt. */}
+        <div className="relative pr-10">
           <span className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-semibold text-[#2a231d]">
-            {t(`occasion.${list.occasion}` as "occasion.OTHER")}
+            {occasionLabel(list, t)}
           </span>
           <h1 className="mt-3 text-2xl font-bold tracking-tight text-white drop-shadow-sm sm:text-5xl">
             {list.title}
@@ -57,7 +82,7 @@ export async function VisitorListView({
             })}
           </p>
           {list.description && (
-            <p className="mt-3 max-w-2xl leading-relaxed text-white/90">
+            <p className="mt-3 max-w-2xl whitespace-pre-line leading-relaxed text-white/90">
               {list.description}
             </p>
           )}

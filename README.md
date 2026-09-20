@@ -28,11 +28,18 @@ maar de eigenaar van de lijst ziet dat nooit.
   blauw, dan worden de deelknop, de opslaanknop en de prijzen ook blauw.
 - **Cadeau-details:** hoe graag je iets wilt op een schuif van vijf sterren,
   gewenst aantal en een notitie voor maat, kleur of variant.
+- **Bij "Anders" zeg je zelf waar de lijst voor is** — "Jubileum", "Nieuwe
+  baan". Laat je het leeg, dan blijft er gewoon "Anders" staan.
+- **Elke invulbalk heeft een kruisje** zodra er iets in staat. Vooral bij de
+  datum scheelt dat: die tik je niet, die kies je, en zonder kruisje kom je er
+  bijna niet meer vanaf.
 - **Claimen zonder account.** Een bezoeker vult alleen een naam in. Bij meerdere
   exemplaren telt de app af ("nog 1 van 2 beschikbaar"). Je eigen claim kun je
   altijd weer intrekken.
 - **Delen** via een onraadbare link (`/l/<code>`) en een profielpagina
   (`/u/<handle>`) met je profielfoto, een korte bio en je openbare lijsten.
+  Vanaf een gedeelde lijst kom je met het poppetje op de omslag bij het profiel
+  van de maker, en daar kun je meteen vrienden worden.
 - **Vrienden** (`/friends`): iemand opzoeken op profielnaam of een
   uitnodigingslink delen (`/i/<code>`). Vrienden staan bij elkaar met een link
   naar hun profiel.
@@ -444,6 +451,30 @@ gecontroleerd op privé-, loopback- en link-local-adressen (ook bij elke
 redirect), maximaal 3 redirects, 12 seconden time-out, 2 MB HTML en 5 MB per
 afbeelding. Daarbovenop geldt een rate limit per gebruiker.
 
+## Wat een bezoeker kan
+
+Wie alleen de link van een lijst heeft, zat tot nu toe in een doodlopend
+straatje: cadeaus claimen en verder niets. Op de omslag staat nu een poppetje
+dat naar het profiel van de maker gaat — dezelfde plek waar de eigenaar zelf
+het tandwiel heeft. Daar staan zijn andere openbare lijsten, en ben je ingelogd
+en bevriend, dan zie je ook zijn vriendenlijsten (dat regelt `getPublicProfile`
+al).
+
+Op zo'n profiel staat een vriendschapsknopje, en het icoontje vertelt waar je
+staat:
+
+| Icoontje | Betekenis |
+| --- | --- |
+| poppetje met plusje | nog niets — tikken stuurt een verzoek |
+| poppetje met klokje | verzoek verstuurd, je wacht op antwoord |
+| poppetje met vinkje | jullie zijn vrienden; er valt niets te tikken |
+
+Niet ingelogd? Dan staat het knopje er gewoon, en legt het bij het aantikken
+uit dat je daarvoor moet inloggen — met de keuze tussen inloggen en annuleren.
+Kies je inloggen, dan kom je daarna terug op datzelfde profiel. Een knop die er
+wel staat maar zwijgend niets doet is vervelender dan een knop die uitlegt wat
+eraan ontbreekt.
+
 ## Vrienden en zichtbaarheid
 
 Een vriendschap staat één keer in de tabel, met de twee id's in een vaste
@@ -630,6 +661,33 @@ De end-to-end tests controleren dit expliciet: na een claim mag de naam van de
 koper nergens in de HTML van de eigenaar voorkomen, ook niet in het voorbeeld,
 en zijn eigen deel-link hoort bij zijn lijst uit te komen.
 
+## De invulbalken
+
+Elke balk waar je zelf iets in typt heeft rechts een kruisje om hem in één tik
+leeg te maken (`components/field.tsx`). Het verschijnt pas zodra er iets in
+staat — bij een lege balk zou het alleen maar in de weg zitten — en de ruimte
+ervoor staat er wél altijd, anders verspringt je tekst zodra je de eerste
+letter typt.
+
+Eén ding daarin is niet vanzelfsprekend. De balken zijn "ongecontroleerd": ze
+krijgen een `defaultValue` en de browser houdt de rest bij. Leegmaken is dan
+niet simpelweg `node.value = ""`, want React onthoudt de laatst bekende waarde
+op het element en slaat de gebeurtenis over — een gecontroleerd veld, zoals je
+profielnaam, springt dan meteen weer terug. Via de oorspronkelijke setter van
+de browser omzeilen we dat geheugen, en daarna stoten we zelf een `input` af
+zodat alles wat meeluistert bijblijft.
+
+**Het datumveld** brengt op iOS zijn eigen, bredere maat mee en trekt de balk
+daarmee verder door dan alle andere. `appearance: none` haalt die native
+maatvoering eraf; de vormgeving uit `.field` blijft gewoon staan en tikken
+opent nog steeds de datumkiezer. Chrome verstopt dan zijn kalendericoon, dus
+dat zetten we apart terug.
+
+**Enters blijven enters.** Wat je in een tekstvak typt — de omschrijving van
+een lijst, je bio, de notitie bij een cadeau — kwam overal als één doorlopende
+regel terug, omdat HTML regeleindes samenvouwt tot een spatie. Elke plek waar
+zulke tekst wordt getoond staat nu op `whitespace-pre-line`.
+
 ## Elke lijst zijn eigen kleur
 
 De kleur die je voor de omslag kiest kleurt de hele app mee zolang je in die
@@ -808,6 +866,14 @@ daar: de pagina eronder staat stil (en je komt terug waar je was), een paneel
 schuift niet zijwaarts, en de opslaanknop is meteen te zien én gaat op zijn
 eigen plek staan zodra die in zicht komt.
 
+`tests/e2e/velden.spec.ts` bewaakt de invulbalken: het kruisje verschijnt pas
+als er iets in staat, een gekozen datum gaat er met één tik weer af en blijft
+daarna ook echt leeg, bij "Anders" verschijnt het eigen veld, en een enter in
+een omschrijving telt op het scherm als een echte regel.
+`tests/e2e/profiel.spec.ts` doet hetzelfde voor de bezoekerskant: het poppetje
+op de omslag, de drie standen van het vriendschapsknopje, en de vriendenlijsten
+die pas zichtbaar worden als je vrienden bent.
+
 Wat een kale Chromium niet kan nadoen zeggen we er eerlijk bij: het bladeren
 met je vinger achter een open paneel, en het zijwaarts wiebelen, zijn allebei
 gedrag van Safari op een iPhone. Die tests leggen daarom de regel vast die het
@@ -856,10 +922,12 @@ lib/
   gifts.ts          cadeaus — owner- en bezoekersweergave strikt gescheiden
   claims.ts         reserveren, met een anoniem token in een cookie
   covers.ts         de omslagkleuren, en welke accentkleur daarbij hoort
+  occasions.ts      hoe een gelegenheid op het scherm komt te staan
   scroll-lock.ts    de pagina stilhouden zolang er een paneel openstaat
   scraper/          safe-fetch, extractie, prijsparser, shop-regels
   i18n/             Nederlands en Engels
 components/         de interface
+  field.tsx         een invulbalk met een kruisje om hem leeg te maken
   logo.tsx          het cadeau, getekend uit de accentkleur van het moment
 messages/           nl.json en en.json
 scripts/            losse hulpjes (migraties, de iconen voor het beginscherm)
