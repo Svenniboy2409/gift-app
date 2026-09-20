@@ -12,7 +12,7 @@ import {
   isHiddenOnProfile,
 } from "@/lib/collab";
 import { getFriends } from "@/lib/friends";
-import { accentClass } from "@/lib/covers";
+import { accentPage } from "@/lib/covers";
 import { ListCollab } from "@/components/collab";
 import { GiftManager } from "@/components/gift-manager";
 import { ListSettings } from "@/components/list-settings";
@@ -76,9 +76,10 @@ export default async function ListPage({
               });
 
   return (
-    // De kleur van de omslag kleurt de hele lijst mee: de deelknop, de
-    // opslaanknop in de instellingen, de prijzen. Zie lib/covers.ts.
-    <div className={`${accentClass(list.coverColor)} space-y-6`}>
+    // De kleur van de omslag kleurt de hele app mee zolang je in deze lijst
+    // zit: de deelknop, de prijzen, maar ook de balk onderaan en het logo.
+    // Zie lib/covers.ts.
+    <div {...accentPage(list.coverColor)} className="space-y-6">
       <div>
         <Link href="/dashboard" prefetch className="btn btn-ghost btn-sm -ml-3 mb-3">
           <svg

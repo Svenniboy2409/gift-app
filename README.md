@@ -632,15 +632,28 @@ en zijn eigen deel-link hoort bij zijn lijst uit te komen.
 
 ## Elke lijst zijn eigen kleur
 
-De kleur die je voor de omslag kiest kleurt de hele lijst mee: de deelknop, de
-opslaanknop in de instellingen, de prijs bij een cadeau, de rand om een veld dat
-je aanklikt. Kies je de blauwe omslag, dan is de lijst blauw.
+De kleur die je voor de omslag kiest kleurt de hele app mee zolang je in die
+lijst zit: de deelknop, de opslaanknop, de prijs bij een cadeau, de balk
+onderaan, de plusknop, het actieve tabblad en het logo linksboven. Kies je de
+blauwe omslag, dan is alles blauw.
 
 Dat kon zonder aan al die knoppen te komen, omdat de hele app haar accent al uit
 vier variabelen haalde: `--accent`, `--accent-hover`, `--accent-soft` en
-`--accent-text`. Per omslagkleur staat er nu een klasse in `app/globals.css` die
-die vier opnieuw zet, en `accentClass()` uit `lib/covers.ts` plakt hem op het
-buitenste vak van alles wat bij die ene lijst hoort. De rest erft mee.
+`--accent-text`. Per omslagkleur staat er nu in `app/globals.css` een blokje dat
+die vier opnieuw zet, met twee selectors ervoor:
+
+| Selector | Waarvoor |
+| --- | --- |
+| `.accent-ocean` | één blokje op een pagina vol lijsten — elk kaartje op het overzicht heeft zijn eigen kleur, dus die kan niet op de hele pagina |
+| `:root:has([data-accent-page="ocean"])` | een pagina die helemaal bij één lijst hoort |
+
+Dat tweede is het aardige stukje. De balk onderaan en het logo staan in de
+layout, dus *boven* de pagina in de boom — een klasse op de pagina bereikt ze
+nooit. Met `:has()` draait het om: de pagina zet één attribuut, de stylesheet
+ziet dat vanaf `<html>` en zet de variabelen daar. Alles eronder erft mee, ook
+wat buiten de pagina staat. Geen JavaScript, geen flits bij het laden, en bij
+het wegklikken van de lijst is het attribuut weg en is de app weer oranje.
+`accentPage()` uit `lib/covers.ts` zet dat merkteken.
 
 Er zijn twaalf kleuren, in de volgorde van het kleurenwiel met terracotta — de
 kleur van de app zelf — vooraan en het enige neutraal achteraan:
@@ -659,17 +672,45 @@ twee rijen van zes in de kiezer.
 
 Waar hij op staat:
 
-| Plek | Waarom |
+| Plek | Hoe |
 | --- | --- |
-| `/lists/<id>` | de lijst zoals jij hem samenstelt, inclusief het instellingenpaneel |
-| `/l/<code>` en `/p/<id>` | wie je lijst bezoekt ziet dezelfde kleur |
-| Elk kaartje op het overzicht en je profiel | het overzicht laat dezelfde kleuren zien als de lijsten zelf |
-| Het formulier terwijl je kiest | de opslaanknop kleurt mee vóór je opslaat, zodat je ziet wat je kiest |
+| `/lists/<id>` | merkteken op de pagina, dus de hele app inclusief de balken en het logo |
+| `/l/<code>` en `/p/<id>` | idem: wie je lijst bezoekt ziet dezelfde kleur |
+| Elk kaartje op het overzicht en je profiel | klasse per kaartje — ze staan naast elkaar met verschillende kleuren |
+| Het formulier terwijl je kiest | klasse op het formulier, zodat de opslaanknop meekleurt vóór je opslaat |
 
-De balk onderaan, de kop bovenaan en het paneel om een cadeau toe te voegen
-blijven het oranje van de app. Dat is geen vergetelheid: die horen bij de app en
-niet bij één lijst — vanuit dat paneel kun je een cadeau in meerdere lijsten
-tegelijk zetten.
+Buiten een lijst — op het overzicht, bij je vrienden, in je account — is de app
+gewoon terracotta. Het schuifpaneel om een cadeau toe te voegen ook: daarvandaan
+kun je een cadeau in meerdere lijsten tegelijk zetten, dus dat hoort bij geen
+enkele kleur in het bijzonder.
+
+### Het cadeau zelf
+
+`components/logo.tsx` tekent het cadeau uit één kleur: de accentkleur van het
+moment. Daaruit mengt hij met `color-mix()` een reeksje tinten — een lichter
+deksel, een donkerder rechterzijde, een bijna wit lint — plus een paar
+kleurloze verlopen voor het licht op het deksel, de schaduw onder de rand en
+het vlekje waar het cadeau op staat.
+
+Eén ding om te onthouden bij het aanpassen: **de kleuren staan als platte
+`fill` op de vormen zelf, en de verlopen in `<defs>` zijn kleurloos.** Dat is
+met opzet. Staat het logo twee keer op een pagina — de kop en de voettekst —
+dan wijzen beide `url(#…)`-aanroepen naar dezelfde definitie, namelijk de
+eerste in het document. Zat de accentkleur ín zo'n verloop, dan kreeg het
+tweede logo de kleur van het eerste. Dat is precies wat er tijdens het bouwen
+gebeurde, en het is van buitenaf lastig te zien.
+
+De iconen voor het beginscherm komen uit dezelfde tekening:
+
+```bash
+node scripts/maak-iconen.mjs
+```
+
+Dat script leest de SVG uit de component, zet hem op de lichte achtergrond van
+de app en schiet er `public/icon-192.png`, `icon-512.png` en
+`apple-touch-icon.png` uit. Verandert het logo, draai het dan opnieuw — anders
+staat op iemands beginscherm nog het oude cadeau. Die op het beginscherm is
+altijd terracotta: hij hoort bij de app, niet bij één lijst.
 
 ### Hoe de kleuren gekozen zijn
 
@@ -680,7 +721,12 @@ eronder). Terracotta is de uitzondering en staat er precies zoals hij altijd
 was — dat is de kleur van de app zelf, en die wilden we niet stilletjes
 verschuiven.
 
-`tests/e2e/kleuren.spec.ts` loopt de lijst uit `lib/covers.ts` zelf af, dus een
+`tests/e2e/kleuren.spec.ts` controleert ook dat het doorkleuren écht tot in de
+balken komt: op een lijstpagina moet `<html>` de kleur van die lijst dragen en
+moet de doos van het logo — dat in de kop staat, buiten de pagina — diezelfde
+kleur hebben; op het overzicht hoort de app weer terracotta te zijn.
+
+Diezelfde test loopt de lijst uit `lib/covers.ts` zelf af, dus een
 nieuwe kleur wordt vanzelf meegenomen. Per kleur wordt gecontroleerd dat alle
 vier de accentvariabelen gezet zijn, dat er een verloop voor de banner is, en
 dat er een naam in het Nederlands én het Engels bij staat. Alle drie de
@@ -814,7 +860,9 @@ lib/
   scraper/          safe-fetch, extractie, prijsparser, shop-regels
   i18n/             Nederlands en Engels
 components/         de interface
+  logo.tsx          het cadeau, getekend uit de accentkleur van het moment
 messages/           nl.json en en.json
+scripts/            losse hulpjes (migraties, de iconen voor het beginscherm)
 ```
 
 ## Techniek

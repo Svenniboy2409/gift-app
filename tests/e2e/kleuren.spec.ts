@@ -152,7 +152,7 @@ test("de lijst neemt de kleur van zijn omslag over", async ({ page }) => {
 
   // De prijs, de deelknop en de omslag gebruiken allemaal dezelfde kleur.
   const uitLijst = await page
-    .locator(".accent-ocean")
+    .locator('[data-accent-page="ocean"]')
     .first()
     .evaluate((el) => getComputedStyle(el).getPropertyValue("--accent").trim());
   expect(uitLijst).toBe(oceaan.accent);
@@ -160,6 +160,46 @@ test("de lijst neemt de kleur van zijn omslag over", async ({ page }) => {
   // En na herladen staat hij er nog steeds.
   await page.reload();
   expect(await prijs.evaluate((el) => getComputedStyle(el).color)).toBe(blauw);
+});
+
+test("de hele app kleurt mee, tot en met het logo", async ({ page }) => {
+  await register(page, "Doorkleurder", "chroom");
+  await createList(page, "Blauwe lijst");
+
+  /** De accentkleur zoals <html> hem kent — daar hangen de balken aan. */
+  const opDeWortel = () =>
+    page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue("--accent").trim(),
+    );
+
+  await page.getByRole("button", { name: "Instellingen van de lijst" }).click();
+  await page.getByRole("dialog").waitFor();
+  await page.waitForTimeout(300);
+  await page.getByRole("button", { name: "Oceaan" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Opslaan" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const oceaan = (await accentVan(page, "ocean")).accent;
+  expect(await opDeWortel()).toBe(oceaan);
+
+  // Het logo staat in de balk bovenaan, dus buiten de pagina — en kleurt toch
+  // mee. De doos is het vlak dat de accentkleur zelf draagt.
+  const doos = page.locator("header svg path").first();
+  expect(await doos.evaluate((el) => getComputedStyle(el).fill)).toBe(
+    await page.evaluate((hex) => {
+      const proef = document.createElement("span");
+      proef.style.color = hex;
+      document.body.append(proef);
+      const rgb = getComputedStyle(proef).color;
+      proef.remove();
+      return rgb;
+    }, oceaan),
+  );
+
+  // Buiten de lijst is de app weer gewoon zichzelf.
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { name: "Mijn lijsten" })).toBeVisible();
+  expect(await opDeWortel()).toBe((await accentVan(page, "terracotta")).accent);
 });
 
 test("de kleur is al te zien terwijl je hem kiest", async ({ page }) => {
@@ -201,7 +241,7 @@ test("wie de lijst bezoekt ziet dezelfde kleur", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Deellijst" })).toBeVisible();
 
   const opBezoek = await page
-    .locator(".accent-plum")
+    .locator('[data-accent-page="plum"]')
     .first()
     .evaluate((el) => getComputedStyle(el).getPropertyValue("--accent").trim());
   expect(opBezoek).toBe(pruim.accent);

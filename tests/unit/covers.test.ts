@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { COVER_COLORS, accentClass, isCoverColor } from "@/lib/covers";
+import {
+  COVER_COLORS,
+  accentClass,
+  accentPage,
+  isCoverColor,
+} from "@/lib/covers";
 
 describe("accentClass", () => {
   it("geeft per omslagkleur zijn eigen klasse", () => {
@@ -19,5 +24,17 @@ describe("accentClass", () => {
   it("herkent alleen de kleuren die we echt hebben", () => {
     expect(isCoverColor("ocean")).toBe(true);
     expect(isCoverColor("Ocean")).toBe(false);
+  });
+});
+
+describe("accentPage", () => {
+  it("zet het merkteken waar de stylesheet naar kijkt", () => {
+    expect(accentPage("ocean")).toEqual({ "data-accent-page": "ocean" });
+  });
+
+  it("valt terug op de kleur van de app zelf", () => {
+    expect(accentPage("kanariegeel")).toEqual({
+      "data-accent-page": "terracotta",
+    });
   });
 });
